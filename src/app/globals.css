@@ -1,8 +1,12 @@
 @import "tailwindcss";
+@import "ckeditor5/ckeditor5.css";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --color-1: #1f4172;
+  --color-2: #febbbb;
+  --color-3: #fdf0f0;
 }
 
 @theme inline {
@@ -10,6 +14,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-primary: var(--color-1);
+  --color-secondary: var(--color-2);
+  --color-thirdary: var(--color-3);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,8 +26,191 @@
   }
 }
 
+@layer utilities {
+  .text-primary {
+    color: var(--color-1);
+  }
+  .text-secondary {
+    color: var(--color-2);
+  }
+  .text-thirdary {
+    color: var(--color-3);
+  }
+  .hover\:text-primary:hover {
+    color: var(--color-1);
+  }
+  .hover\:text-secondary:hover {
+    color: var(--color-2);
+  }
+  .hover\:text-thirdary:hover {
+    color: var(--color-3);
+  }
+  .border-primary {
+    border-color: var(--color-1);
+  }
+  .border-secondary {
+    border-color: var(--color-2);
+  }
+  .border-thirdary {
+    border-color: var(--color-3);
+  }
+  .bg-primary {
+    background-color: var(--color-1);
+  }
+  .bg-secondary {
+    background-color: var(--color-2);
+  }
+  .bg-thirdary {
+    background-color: var(--color-3);
+  }
+  .hover\:bg-primary:hover {
+    background-color: var(--color-1);
+  }
+  .hover\:bg-secondary:hover {
+    background-color: var(--color-2);
+  }
+  .hover\:bg-thirdary:hover {
+    background-color: var(--color-3);
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+button {
+  cursor: pointer;
+}
+
+.ck-content {
+  min-height: 200px;
+}
+
+@keyframes orbital3d-multi {
+  0% {
+    transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y)) rotateZ(0deg);
+  }
+  25% {
+    transform: rotateX(calc(var(--rotate-x) + 30deg))
+      rotateY(calc(var(--rotate-y) + 45deg)) rotateZ(90deg);
+  }
+  50% {
+    transform: rotateX(calc(var(--rotate-x) - 20deg))
+      rotateY(calc(var(--rotate-y) - 30deg)) rotateZ(180deg);
+  }
+  75% {
+    transform: rotateX(calc(var(--rotate-x) + 40deg))
+      rotateY(calc(var(--rotate-y) - 60deg)) rotateZ(270deg);
+  }
+  100% {
+    transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y)) rotateZ(360deg);
+  }
+}
+@keyframes orbital3d-complex {
+  0% {
+    transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y)) rotateZ(0deg);
+  }
+  20% {
+    transform: rotateX(calc(var(--rotate-x) - 45deg))
+      rotateY(calc(var(--rotate-y) + 60deg)) rotateZ(72deg);
+  }
+  40% {
+    transform: rotateX(calc(var(--rotate-x) + 60deg))
+      rotateY(calc(var(--rotate-y) - 40deg)) rotateZ(144deg);
+  }
+  60% {
+    transform: rotateX(calc(var(--rotate-x) - 30deg))
+      rotateY(calc(var(--rotate-y) + 80deg)) rotateZ(216deg);
+  }
+  80% {
+    transform: rotateX(calc(var(--rotate-x) + 50deg))
+      rotateY(calc(var(--rotate-y) - 70deg)) rotateZ(288deg);
+  }
+  100% {
+    transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y)) rotateZ(360deg);
+  }
+}
+.orbital-multi {
+  animation: orbital3d-multi linear infinite;
+}
+.orbital-complex {
+  animation: orbital3d-complex linear infinite;
+}
+
+.ck-content ul {
+  list-style-type: disc !important;
+  margin: 1rem 0 !important;
+  padding-left: 2rem !important;
+}
+
+.ck-content ol {
+  list-style-type: decimal !important;
+  margin: 1rem 0 !important;
+  padding-left: 2rem !important;
+}
+
+.ck-content li {
+  margin: 0.5rem 0 !important;
+  padding-left: 0.5rem !important;
+}
+
+/* For rendered content */
+.post-content ul {
+  list-style-type: disc !important;
+  margin: 1rem 0 !important;
+  padding-left: 2rem !important;
+}
+
+.post-content ol {
+  list-style-type: decimal !important;
+  margin: 1rem 0 !important;
+  padding-left: 2rem !important;
+}
+
+.post-content li {
+  margin: 0.5rem 0 !important;
+  padding-left: 0.5rem !important;
+  display: list-item !important;
+}
+
+.ck-content h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.ck-content h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.8rem 0;
+}
+
+.ck-content h3 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 0.6rem 0;
+}
+
+.ck-content h4 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+.ck-content h5 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 0.4rem 0;
+}
+
+.ck-content h6 {
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin: 0.3rem 0;
+}
+
+.image__caption_highlighted {
+  text-align: center;
 }
