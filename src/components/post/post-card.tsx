@@ -117,6 +117,8 @@ export default function PostCard({
           <Image
             src="/diverse-avatars.png"
             alt="Ảnh đại diện"
+            width={40}
+            height={40}
             className="h-10 w-10 rounded-full object-cover ring-1 ring-primary/10"
           />
           <div>
@@ -225,6 +227,8 @@ export default function PostCard({
           <Image
             src={post.coverUrl || "/placeholder.svg"}
             alt="Ảnh nội dung bài viết"
+            width={400}
+            height={300}
             className="h-auto w-full object-cover"
           />
         </div>

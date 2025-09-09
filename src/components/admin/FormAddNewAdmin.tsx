@@ -274,6 +274,8 @@ const FormAddNewAdmin = ({
                     <Image
                       src={newAdmin.avatarUrl}
                       alt="Avatar preview"
+                      width={48}
+                      height={48}
                       className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";

@@ -269,6 +269,8 @@ PostDetailModalProps) {
                       <Image
                         src={post.coverUrl || "/placeholder.svg"}
                         alt={post.title}
+                        width={800}
+                        height={450}
                         className="w-full h-full object-cover"
                       />
                     </motion.div>

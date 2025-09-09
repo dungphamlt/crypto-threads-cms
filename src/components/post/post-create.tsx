@@ -570,6 +570,8 @@ export default function PostFormModal({
                         <Image
                           src={post.coverUrl || "/placeholder.svg"}
                           alt="Cover preview"
+                          width={400}
+                          height={300}
                           className="w-full max-h-96 rounded object-cover"
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
