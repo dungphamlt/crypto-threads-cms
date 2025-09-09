@@ -21,6 +21,28 @@ axiosClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Interceptor để xử lý response 401
+axiosClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Xử lý khi token hết hạn hoặc không hợp lệ
+      Cookies.remove("token");
+
+      // Redirect về trang login nếu đang ở client-side
+      if (typeof window !== "undefined") {
+        const currentPath = window.location.pathname;
+        const redirectUrl =
+          currentPath !== "/login"
+            ? `/login?redirect=${encodeURIComponent(currentPath)}`
+            : "/login";
+        window.location.href = redirectUrl;
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Hàm xử lý response chung
 const handleResponse = <T>(response: AxiosResponse): ApiResponse<T> => {
   return {
@@ -34,14 +56,24 @@ const handleResponse = <T>(response: AxiosResponse): ApiResponse<T> => {
 // Hàm xử lý lỗi chung
 const handleError = <T>(error: AxiosError): ApiResponse<T> => {
   if (error.response?.status === 401) {
-    // Xử lý khi token hết hạn
+    // Xử lý khi token hết hạn hoặc không hợp lệ
     Cookies.remove("token");
-    // window.location.href = "/login";
+
+    // Redirect về trang login nếu đang ở client-side
+    if (typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      const redirectUrl =
+        currentPath !== "/login"
+          ? `/login?redirect=${encodeURIComponent(currentPath)}`
+          : "/login";
+      window.location.href = redirectUrl;
+    }
   }
 
   return {
     success: false,
-    error: (error.response?.data as any)?.message || error.message,
+    error:
+      (error.response?.data as { message: string })?.message || error.message,
     status: error.response?.status,
   };
 };

@@ -2,85 +2,33 @@
 
 import type React from "react";
 import { postService } from "@/services/postService";
-import { type Post, type PostDetail, POST_STATUS } from "@/types";
+import {
+  type Post,
+  type PostDetail,
+  POST_STATUS,
+  SubCategory,
+  Category,
+} from "@/types";
 import { useState, useEffect, useCallback } from "react";
 import CKEditorField from "@/components/editor";
 import { toast } from "react-hot-toast";
+import { categoryService } from "@/services/categoryService";
+import { useQuery } from "@tanstack/react-query";
 import {
   UploadCloud,
   AlignLeft,
   RefreshCw,
   SendHorizonal,
   Eye,
-  Folder,
   X,
   Save,
   Clock,
-  Calendar,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
+import Image from "next/image";
 const TITLE_LIMIT = 120;
 const DESC_LIMIT = 180;
 const META_DESC_LIMIT = 160;
-
-const CATEGORIES = [
-  { value: "", label: "Select category" },
-  { value: "technology", label: "Technology" },
-  { value: "crypto", label: "Cryptocurrency" },
-  { value: "blockchain", label: "Blockchain" },
-  { value: "finance", label: "Finance" },
-  { value: "news", label: "News" },
-  { value: "tutorial", label: "Tutorial" },
-  { value: "analysis", label: "Analysis" },
-];
-
-const SUBCATEGORIES: Record<string, Array<{ value: string; label: string }>> = {
-  technology: [
-    { value: "", label: "Select subcategory" },
-    { value: "ai", label: "Artificial Intelligence" },
-    { value: "web-dev", label: "Web Development" },
-    { value: "mobile", label: "Mobile Development" },
-    { value: "cloud", label: "Cloud Computing" },
-  ],
-  crypto: [
-    { value: "", label: "Select subcategory" },
-    { value: "bitcoin", label: "Bitcoin" },
-    { value: "ethereum", label: "Ethereum" },
-    { value: "defi", label: "DeFi" },
-    { value: "nft", label: "NFT" },
-  ],
-  blockchain: [
-    { value: "", label: "Select subcategory" },
-    { value: "smart-contracts", label: "Smart Contracts" },
-    { value: "consensus", label: "Consensus Mechanisms" },
-    { value: "layer2", label: "Layer 2 Solutions" },
-  ],
-  finance: [
-    { value: "", label: "Select subcategory" },
-    { value: "trading", label: "Trading" },
-    { value: "investment", label: "Investment" },
-    { value: "banking", label: "Banking" },
-  ],
-  news: [
-    { value: "", label: "Select subcategory" },
-    { value: "market", label: "Market News" },
-    { value: "regulation", label: "Regulation" },
-    { value: "events", label: "Events" },
-  ],
-  tutorial: [
-    { value: "", label: "Select subcategory" },
-    { value: "beginner", label: "Beginner" },
-    { value: "intermediate", label: "Intermediate" },
-    { value: "advanced", label: "Advanced" },
-  ],
-  analysis: [
-    { value: "", label: "Select subcategory" },
-    { value: "technical", label: "Technical Analysis" },
-    { value: "fundamental", label: "Fundamental Analysis" },
-    { value: "market", label: "Market Analysis" },
-  ],
-};
 
 interface PostFormModalProps {
   isOpen: boolean;
@@ -116,6 +64,8 @@ export default function PostFormModal({
     excerpt: "",
     coverUrl: undefined,
     status: POST_STATUS.PUBLISHED,
+    slug: "",
+    publishTime: "",
   });
 
   const formValidation = useCallback(() => {
@@ -129,33 +79,6 @@ export default function PostFormModal({
 
   const { isValid: canSubmit } = formValidation();
 
-  useEffect(() => {
-    if (isOpen && postId && !initialData) {
-      loadPostData(postId);
-    } else if (isOpen && initialData) {
-      populateForm(initialData);
-    }
-  }, [isOpen, postId, initialData]);
-
-  const loadPostData = async (id: string) => {
-    setIsLoading(true);
-    try {
-      const response = await postService.getPostDetail(id);
-      if (response.success && response.data) {
-        populateForm(response.data);
-      } else {
-        toast.error("Failed to load post data");
-        onClose();
-      }
-    } catch (error) {
-      console.error("Failed to load post:", error);
-      toast.error("Failed to load post");
-      onClose();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const populateForm = (postData: PostDetail) => {
     setPost({
       title: postData.title,
@@ -168,8 +91,63 @@ export default function PostFormModal({
       coverUrl: postData.coverUrl,
       status: postData.status,
       slug: postData.slug,
+      publishTime: postData.publishTime,
     });
   };
+
+  const loadPostData = useCallback(
+    async (id: string) => {
+      setIsLoading(true);
+      try {
+        const response = await postService.getPostDetail(id);
+        if (response.success && response.data) {
+          populateForm(response.data);
+        } else {
+          toast.error("Failed to load post data");
+          onClose();
+        }
+      } catch (error) {
+        console.error("Failed to load post:", error);
+        toast.error("Failed to load post");
+        onClose();
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    if (isOpen && postId && !initialData) {
+      loadPostData(postId);
+    } else if (isOpen && initialData) {
+      populateForm(initialData);
+    }
+  }, [isOpen, postId, initialData, loadPostData]);
+
+  const { data: categoriesResponse, isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryService.getCategoryList(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+  });
+
+  const { data: subCategoriesResponse, isLoading: subCategoriesLoading } =
+    useQuery({
+      queryKey: ["subCategories", post.category],
+      queryFn: () => categoryService.getSubCategoryList(post.category),
+      enabled: !!post.category, // Only fetch when category is selected
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 2,
+    });
+
+  // Extract data from API responses
+  const categories = categoriesResponse?.success
+    ? categoriesResponse.data || []
+    : [];
+  const subCategories = subCategoriesResponse?.success
+    ? subCategoriesResponse.data || []
+    : [];
 
   const onChangeField = useCallback(
     (
@@ -188,16 +166,6 @@ export default function PostFormModal({
     []
   );
 
-  const handleTagInputKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" || e.key === ",") {
-        e.preventDefault();
-        addTag();
-      }
-    },
-    [tagInput, post.tags]
-  );
-
   const addTag = useCallback(() => {
     const trimmedTag = tagInput.trim().toLowerCase();
     if (
@@ -209,6 +177,16 @@ export default function PostFormModal({
       setTagInput("");
     }
   }, [tagInput, post.tags]);
+
+  const handleTagInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter" || e.key === ",") {
+        e.preventDefault();
+        addTag();
+      }
+    },
+    [addTag]
+  );
 
   const removeTag = useCallback((tagToRemove: string) => {
     setPost((prev) => ({
@@ -231,6 +209,8 @@ export default function PostFormModal({
         excerpt: "",
         coverUrl: undefined,
         status: POST_STATUS.DRAFT,
+        slug: "",
+        publishTime: "",
       });
     }
     setTagInput("");
@@ -280,6 +260,10 @@ export default function PostFormModal({
             `${scheduleDate}T${scheduleTime}`
           ).toISOString(),
         }),
+        publishTime:
+          action === "schedule"
+            ? new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
+            : new Date().toISOString(),
       };
 
       console.log("Submitting data:", submitData);
@@ -463,11 +447,17 @@ export default function PostFormModal({
                         name="category"
                         value={post.category}
                         onChange={onChangeField}
-                        className="w-full rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-primary focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+                        disabled={categoriesLoading}
+                        className="w-full rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-primary focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20 disabled:opacity-50"
                       >
-                        {CATEGORIES.map((cat) => (
-                          <option key={cat.value} value={cat.value}>
-                            {cat.label}
+                        <option value="">
+                          {categoriesLoading
+                            ? "Loading categories..."
+                            : "Select a category"}
+                        </option>
+                        {categories?.map((cat: Category) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.key}
                           </option>
                         ))}
                       </select>
@@ -482,18 +472,21 @@ export default function PostFormModal({
                         name="subCategory"
                         value={post.subCategory}
                         onChange={onChangeField}
-                        disabled={!post.category}
+                        disabled={!post.category || subCategoriesLoading}
                         className="w-full rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-primary focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20 disabled:opacity-50"
                       >
-                        {post.category && SUBCATEGORIES[post.category] ? (
-                          SUBCATEGORIES[post.category].map((subcat) => (
-                            <option key={subcat.value} value={subcat.value}>
-                              {subcat.label}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">Select category first</option>
-                        )}
+                        <option value="">
+                          {!post.category
+                            ? "Select category first"
+                            : subCategoriesLoading
+                            ? "Loading sub-categories..."
+                            : "Select a sub-category"}
+                        </option>
+                        {subCategories?.map((subcat: SubCategory) => (
+                          <option key={subcat.id} value={subcat.id}>
+                            {subcat.key}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -544,6 +537,19 @@ export default function PostFormModal({
                       )}
                     </div>
                   </div>
+                  {/* Slug */}
+                  <div>
+                    <label className="block text-sm font-medium text-primary mb-2">
+                      Slug
+                    </label>
+                    <input
+                      type="text"
+                      name="slug"
+                      value={post.slug}
+                      onChange={onChangeField}
+                      className="w-full rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-primary placeholder:text-primary/40 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
+                    />
+                  </div>
 
                   {/* Cover Image */}
                   <div>
@@ -561,7 +567,7 @@ export default function PostFormModal({
                     />
                     {post.coverUrl && (
                       <div className="mt-3 border border-primary/15 rounded-lg p-2">
-                        <img
+                        <Image
                           src={post.coverUrl || "/placeholder.svg"}
                           alt="Cover preview"
                           className="w-full max-h-96 rounded object-cover"

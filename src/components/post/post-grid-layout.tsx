@@ -28,7 +28,7 @@ interface PostGridProps {
   };
 }
 
-function PostGrid({ searchParams }: PostGridProps) {
+function PostGridLayout({ searchParams }: PostGridProps) {
   const [data, setData] = useState<PostDetail[]>([]);
   const [filteredData, setFilteredData] = useState<PostDetail[]>([]);
   const [loading, setLoading] = useState(false);
@@ -100,10 +100,12 @@ function PostGrid({ searchParams }: PostGridProps) {
 
   useEffect(() => {
     fetchPosts(pagination.current, pagination.pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     applyFilters(data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchText, filterCategory, filterStatus, data]);
 
   console.log("Posts data:", filteredData);
@@ -140,6 +142,7 @@ function PostGrid({ searchParams }: PostGridProps) {
 
   const handleDeletePost = (postId: string) => {
     // Implement delete functionality when API is ready
+    console.log("Delete post:", postId);
     message.info("Delete functionality coming soon");
   };
 
@@ -153,6 +156,7 @@ function PostGrid({ searchParams }: PostGridProps) {
 
   const handleReportPost = (postId: string) => {
     // Implement report functionality
+    console.log("Report post:", postId);
     message.info("Report functionality coming soon");
   };
 
@@ -269,4 +273,4 @@ function PostGrid({ searchParams }: PostGridProps) {
   );
 }
 
-export default PostGrid;
+export default PostGridLayout;

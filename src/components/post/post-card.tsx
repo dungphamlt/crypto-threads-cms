@@ -13,6 +13,10 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import type { PostDetail } from "@/services/postService";
+import { useQuery } from "@tanstack/react-query";
+import { categoryService } from "@/services/categoryService";
+import Image from "next/image";
+import { Category } from "@/types";
 
 export interface PostCardProps {
   post: PostDetail;
@@ -34,6 +38,21 @@ export default function PostCard({
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Load category data
+  const { data: categoriesResponse } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryService.getCategoryList(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const categories = categoriesResponse?.success
+    ? categoriesResponse.data || []
+    : [];
+  const categoryData = categories.find(
+    (cat: Category) => cat.id === post.category
+  );
+  const categoryName = categoryData?.key || post.category || "Unknown";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -95,7 +114,7 @@ export default function PostCard({
       {/* Header */}
       <header className="flex items-start justify-between gap-3 p-4">
         <div className="flex items-center gap-3">
-          <img
+          <Image
             src="/diverse-avatars.png"
             alt="Ảnh đại diện"
             className="h-10 w-10 rounded-full object-cover ring-1 ring-primary/10"
@@ -104,7 +123,7 @@ export default function PostCard({
             <div className="flex flex-wrap items-center gap-1 text-sm">
               <span className="font-semibold text-primary">Admin</span>
               <span className="text-primary/50">tại</span>
-              <span className="text-primary/80">{post.category}</span>
+              <span className="text-primary/80">{categoryName}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-primary/50">
               <span>{formatTimeAgo(post.createdAt)}</span>
@@ -203,7 +222,7 @@ export default function PostCard({
       {/* Media */}
       {post.coverUrl && (
         <div className="mt-1">
-          <img
+          <Image
             src={post.coverUrl || "/placeholder.svg"}
             alt="Ảnh nội dung bài viết"
             className="h-auto w-full object-cover"

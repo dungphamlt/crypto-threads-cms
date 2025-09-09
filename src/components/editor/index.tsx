@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FC, useEffect, useState } from "react";
+import React, { FC, useEffect } from "react";
 import dynamic from "next/dynamic";
 import "ckeditor5/ckeditor5.css";
 

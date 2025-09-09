@@ -1,34 +1,45 @@
-import { ApiResponse, Post, PostDetail } from "@/types";
-import { post, put, get, del, patch } from "./api";
-import { API_ENDPOINTS } from "@/constants/api";
+import { Post, PostDetail } from "@/types";
+import { post, get, del, patch } from "./api";
 
 export const postService = {
   createPost: (postData: Post) => {
-    return post<PostDetail>(API_ENDPOINTS.POSTS, postData);
+    return post<PostDetail>("/content-management/articles", postData);
   },
 
   getPostList: (page: number = 1, pageSize: number = 10) => {
     return get<PostDetail[]>(
-      `${API_ENDPOINTS.POSTS}?page=${page}&pageSize=${pageSize}`
+      `/content-management/articles?page=${page}&pageSize=${pageSize}`
+    );
+  },
+
+  getPostsByCategory: (categoryId: string) => {
+    return get<PostDetail[]>(
+      `/content-management/articles?category=${categoryId}`
+    );
+  },
+
+  getPostsBySubCategory: (subCategoryId: string) => {
+    return get<PostDetail[]>(
+      `/content-management/articles?sub-category=${subCategoryId}`
     );
   },
 
   getPostDetail: (id: string) => {
-    return get<PostDetail>(API_ENDPOINTS.POST_DETAIL(id));
+    return get<PostDetail>(`/content-management/articles/${id}`);
   },
 
   updatePost: (id: string, postData: Partial<Post>) => {
-    return patch<PostDetail>(API_ENDPOINTS.POST_DETAIL(id), postData);
+    return patch<PostDetail>(`/content-management/articles/${id}`, postData);
   },
 
   updatePostStatus: (id: string, status: string) => {
-    return patch<PostDetail>(API_ENDPOINTS.POST_STATUS(id), {
+    return patch<PostDetail>(`/content-management/articles/${id}/status`, {
       status,
     });
   },
 
   deletePost: (id: string) => {
-    return del<void>(API_ENDPOINTS.POST_DETAIL(id));
+    return del<void>(`/content-management/articles/${id}`);
   },
 
   // Helper method to get post by _id or id

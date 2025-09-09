@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { PostDetail } from "@/types";
+import type { PostDetail, Category } from "@/types";
 import { postService } from "@/services/postService";
+import { categoryService } from "@/services/categoryService";
+import { useQuery } from "@tanstack/react-query";
 import {
   X,
   Calendar,
@@ -14,25 +16,41 @@ import {
   Minimize,
   Maximize,
 } from "lucide-react";
+import Image from "next/image";
 
 interface PostDetailModalProps {
   postId: string | null;
   isOpen: boolean;
   onClose: () => void;
-  onEdit?: (postId: string) => void;
-  onDelete?: (postId: string) => void;
+  // onEdit?: (postId: string) => void;
+  // onDelete?: (postId: string) => void;
 }
 
 export default function PostDetailModal({
   postId,
   isOpen,
   onClose,
-  onEdit,
-  onDelete,
-}: PostDetailModalProps) {
+}: // onEdit,
+// onDelete,
+PostDetailModalProps) {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullScreen] = useState(false);
+
+  // Load category data
+  const { data: categoriesResponse } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryService.getCategoryList(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const categories = categoriesResponse?.success
+    ? categoriesResponse.data || []
+    : [];
+  const categoryData = categories.find(
+    (cat: Category) => cat.id === post?.category
+  );
+  const categoryName = categoryData?.key || post?.category || "Unknown";
 
   useEffect(() => {
     const loadDetail = async () => {
@@ -59,15 +77,15 @@ export default function PostDetailModal({
     loadDetail();
   }, [isOpen, postId]);
 
-  const handleEdit = () => {
-    if (onEdit && postId) onEdit(postId);
-  };
+  // const handleEdit = () => {
+  //   if (onEdit && postId) onEdit(postId);
+  // };
 
-  const handleDelete = async () => {
-    if (postId && confirm("Are you sure you want to delete this post?")) {
-      onDelete?.(postId);
-    }
-  };
+  // const handleDelete = async () => {
+  //   if (postId && confirm("Are you sure you want to delete this post?")) {
+  //     onDelete?.(postId);
+  //   }
+  // };
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -248,7 +266,7 @@ export default function PostDetailModal({
                       transition={{ duration: 0.6, ease: "easeOut" }}
                       className="aspect-video w-full overflow-hidden"
                     >
-                      <img
+                      <Image
                         src={post.coverUrl || "/placeholder.svg"}
                         alt={post.title}
                         className="w-full h-full object-cover"
@@ -307,7 +325,7 @@ export default function PostDetailModal({
                       {post.category && (
                         <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
                           <Tag className="w-4 h-4 text-purple-500" />
-                          <span>{post.category}</span>
+                          <span>{categoryName}</span>
                         </div>
                       )}
 

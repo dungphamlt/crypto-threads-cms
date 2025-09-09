@@ -26,7 +26,7 @@ interface MenuSideBarProps {
 interface MenuItem {
   name: string;
   href: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   sub?: {
     name: string;
     href: string;
@@ -47,51 +47,6 @@ function MenuSideBar({ collapsed = false, onCloseMobile }: MenuSideBarProps) {
       name: "Categories",
       href: "/categories",
       icon: SquareMenu,
-      sub: [
-        {
-          name: "Insights",
-          href: "/categories/insights", // Thêm prefix
-          sub: [
-            { name: "TradFi", href: "/categories/insights/tradfi" },
-            {
-              name: "Crypto Regulations",
-              href: "/categories/insights/crypto-regulations",
-            },
-            { name: "Market", href: "/categories/insights/market" },
-          ],
-        },
-        {
-          name: "Learn",
-          href: "/categories/learn", // Thêm prefix
-          sub: [
-            { name: "Hidden Gems", href: "/categories/learn/hidden-gems" },
-            {
-              name: "Chains & Protocols",
-              href: "/categories/learn/chains-protocols",
-            },
-            {
-              name: "Crypto Fundamentals",
-              href: "/categories/learn/crypto-fundamentals",
-            },
-            { name: "Airdrops", href: "/categories/learn/airdrops" },
-          ],
-        },
-        {
-          name: "Trading",
-          href: "/categories/trading", // Thêm prefix
-          sub: [
-            {
-              name: "Trading Strategies",
-              href: "/categories/trading/trading-strategies",
-            },
-            {
-              name: "Crypto Analytics",
-              href: "/categories/trading/crypto-analytics",
-            },
-            { name: "Dummies", href: "/categories/trading/dummies" },
-          ],
-        },
-      ],
     },
     { name: "CMS Logs", href: "/logs", icon: TextSearch },
   ];

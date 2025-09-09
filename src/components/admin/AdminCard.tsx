@@ -19,7 +19,7 @@ function getRoleIcon(role: AdminRole) {
   switch (role) {
     case AdminRole.ADMIN:
       return <Crown className="w-4 h-4" />;
-    case AdminRole.CREATOR:
+    case AdminRole.WRITER:
       return <Shield className="w-4 h-4" />;
     default:
       return <UserCheck className="w-4 h-4" />;
@@ -30,7 +30,7 @@ function getRoleColor(role: AdminRole) {
   switch (role) {
     case AdminRole.ADMIN:
       return "from-purple-500 to-pink-500 border-purple-200 text-purple-700";
-    case AdminRole.CREATOR:
+    case AdminRole.WRITER:
       return "from-blue-500 to-indigo-500 border-blue-200 text-blue-700";
     default:
       return "from-green-500 to-emerald-500 border-green-200 text-green-700";
@@ -38,9 +38,11 @@ function getRoleColor(role: AdminRole) {
 }
 
 const AdminCard: React.FC<AdminCardProps> = ({ admin, selected, onSelect }) => {
-  const [active, setActive] = useState(admin.status === AdminStatus.ACTIVE);
+  // const [active, setActive] = useState(admin.role === AdminRole.ADMIN);
   const [isUpdating, setIsUpdating] = useState(false);
-
+  const [status, setStatus] = useState(
+    admin.role === AdminRole.ADMIN ? AdminStatus.ACTIVE : AdminStatus.INACTIVE
+  );
   const handleUpdateStatus = async (adminId: number, status: AdminStatus) => {
     setIsUpdating(true);
     try {
@@ -51,7 +53,11 @@ const AdminCard: React.FC<AdminCardProps> = ({ admin, selected, onSelect }) => {
             status === AdminStatus.ACTIVE ? "activated" : "deactivated"
           } successfully!`
         );
-        setActive(status === AdminStatus.ACTIVE);
+        setStatus(
+          status === AdminStatus.ACTIVE
+            ? AdminStatus.ACTIVE
+            : AdminStatus.INACTIVE
+        );
       } else {
         toast.error(response.message || "Failed to update admin status");
       }
@@ -83,27 +89,27 @@ const AdminCard: React.FC<AdminCardProps> = ({ admin, selected, onSelect }) => {
             )}
           </div>
           <p className="text-sm text-gray-600 mb-3">
-            <span className="font-medium">ID:</span> {admin.telegram_id}
+            <span className="font-medium">ID:</span> {admin._id}
           </p>
           <div className="flex items-center text-xs text-gray-500">
             <Calendar className="w-3 h-3 mr-1" />
-            {new Date(admin.created_at).toLocaleDateString()}
+            Admin Account
           </div>
         </div>
         <div className="flex flex-col justify-between items-center">
           <div
             className={`px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r ${getRoleColor(
-              admin.admin_role
+              admin.role
             )} text-white flex items-center space-x-1`}
           >
-            {getRoleIcon(admin.admin_role)}
-            <span>{admin.admin_role}</span>
+            {getRoleIcon(admin.role)}
+            <span>{admin.role}</span>
           </div>
           <div className="flex items-center space-x-2 mt-2">
             <label
               className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full cursor-pointer transition-all duration-300
                 ${
-                  active
+                  status === AdminStatus.ACTIVE
                     ? "bg-green-500/20 hover:bg-green-500/30"
                     : "bg-red-500/10 hover:bg-red-500/20"
                 }`}
@@ -111,17 +117,21 @@ const AdminCard: React.FC<AdminCardProps> = ({ admin, selected, onSelect }) => {
             >
               <input
                 type="checkbox"
-                checked={active}
+                checked={status === AdminStatus.ACTIVE}
                 onChange={() =>
                   handleUpdateStatus(
-                    admin.id,
-                    active ? AdminStatus.INACTIVE : AdminStatus.ACTIVE
+                    Number(admin._id),
+                    status === AdminStatus.ACTIVE
+                      ? AdminStatus.INACTIVE
+                      : AdminStatus.ACTIVE
                   )
                 }
                 disabled={isUpdating}
                 className="accent-green-500"
               />
-              <span>{active ? "Active" : "Inactive"}</span>
+              <span>
+                {status === AdminStatus.ACTIVE ? "Active" : "Inactive"}
+              </span>
             </label>
           </div>
         </div>

@@ -8,6 +8,7 @@ import {
 } from "@/services/adminService";
 import { X, PenTool, User, UserPlus } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { Image } from "antd";
 
 interface FormAddNewAdminProps {
   open: boolean;
@@ -270,7 +271,7 @@ const FormAddNewAdmin = ({
 
                 {newAdmin.avatarUrl && (
                   <div className="mt-2 flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <img
+                    <Image
                       src={newAdmin.avatarUrl}
                       alt="Avatar preview"
                       className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
@@ -333,7 +334,7 @@ const FormAddNewAdmin = ({
                   <div className="flex flex-wrap gap-2 mt-2">
                     {newAdmin.socials.map((social, index) => (
                       <span
-                        key={social}
+                        key={index}
                         className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-purple-50 text-purple-700 rounded-full border border-purple-200"
                       >
                         {social.length > 30
@@ -380,7 +381,7 @@ const FormAddNewAdmin = ({
                   <div className="flex flex-wrap gap-2 mt-2">
                     {newAdmin.designations.map((designation, index) => (
                       <span
-                        key={designation}
+                        key={index}
                         className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200"
                       >
                         {designation}

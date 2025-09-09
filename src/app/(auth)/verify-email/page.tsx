@@ -1,14 +1,14 @@
 "use client";
 
 import type React from "react";
-
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authService } from "@/services/authService";
 import { Loader2, Mail, Shield, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
-export default function VerifyEmailPage() {
+function VerifyEmailForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
@@ -247,7 +247,7 @@ export default function VerifyEmailPage() {
 
             <div className="text-center pt-2 space-y-2">
               <p className="text-muted-foreground text-sm">
-                Didn't receive the code?
+                Didn&apos;t receive the code?
               </p>
               <button
                 type="button"
@@ -299,5 +299,34 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-background">
+      <div className="w-full max-w-lg relative z-10 bg-card/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-border/50 overflow-hidden">
+        <div className="text-center py-6 px-8">
+          <div className="mx-auto w-14 h-14 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mb-4 shadow-xl">
+            <Shield className="w-7 h-7 text-primary-foreground" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">
+            Verify Email
+          </h1>
+          <div className="flex items-center justify-center mt-4">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VerifyEmailForm />
+    </Suspense>
   );
 }

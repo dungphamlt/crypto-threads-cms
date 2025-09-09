@@ -1,4 +1,4 @@
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -41,6 +41,7 @@ export interface Post {
   coverUrl?: string;
   status: POST_STATUS;
   slug?: string; // Thêm slug cho Post creation
+  publishTime: string; // Thêm publishTime cho Post creation
 }
 
 export interface PostDetail {
@@ -60,6 +61,7 @@ export interface PostDetail {
   slug: string;
   createdAt: string;
   updatedAt: string;
+  publishTime: string;
 }
 
 export enum POST_STATUS {
@@ -75,3 +77,18 @@ export const POST_STATUS_OPTION: Record<POST_STATUS, string> = {
   trash: "trash",
   schedule: "schedule",
 };
+
+export interface Category {
+  id: string;
+  key: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubCategory {
+  id: string;
+  key: string;
+  categoryId: string;
+  createdAt: string;
+  updatedAt: string;
+}

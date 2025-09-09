@@ -6,23 +6,32 @@ export function middleware(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
 
   const isAuthRoute =
-    pathname === "/login" || pathname.startsWith("/(auth)/login");
+    pathname === "/login" ||
+    pathname.startsWith("/(auth)/login") ||
+    pathname.startsWith("/(auth)/register") ||
+    pathname.startsWith("/(auth)/verify-email");
 
-  // Chưa có token: chặn các route bảo vệ, nhưng cho phép vào /login
-  if (!token && !isAuthRoute) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    console.log("Redirecting to login:", url.toString());
-    // return NextResponse.redirect(url);
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/favicon.ico");
+
+  // Cho phép truy cập các route public và auth
+  if (isPublicRoute || isAuthRoute) {
+    return NextResponse.next();
   }
 
-  // Đã có token: tránh vào lại /login
-  if (token && isAuthRoute) {
+  // Chưa có token: redirect về /login
+  if (!token) {
     const url = req.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/login";
+    url.searchParams.set("redirect", pathname);
+    console.log("No token found, redirecting to login:", url.toString());
     return NextResponse.redirect(url);
   }
 
+  // Đã có token: cho phép truy cập
   return NextResponse.next();
 }
 

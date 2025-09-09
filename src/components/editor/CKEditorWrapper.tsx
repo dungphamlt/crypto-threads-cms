@@ -2,6 +2,7 @@
 
 import React, { FC, useEffect } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
+
 import {
   ClassicEditor,
   Alignment,
@@ -124,11 +125,13 @@ const CKEditorWrapper: FC<CkEditorProps> = ({ setEditorData, editorData }) => {
           },
         },
         extraPlugins: [
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           function (editor: any) {
             // Custom heading styles
             editor.conversion.for("dataDowncast").elementToElement({
               model: "heading1",
-              view: (modelElement: any, { writer }: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              view: (modelElement: unknown, { writer }: { writer: any }) => {
                 return writer.createContainerElement("h1", {
                   style:
                     "font-size: 2rem; font-weight: bold; margin: 1rem 0; color: #1f2937;",
@@ -138,7 +141,8 @@ const CKEditorWrapper: FC<CkEditorProps> = ({ setEditorData, editorData }) => {
 
             editor.conversion.for("dataDowncast").elementToElement({
               model: "heading2",
-              view: (modelElement: any, { writer }: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              view: (modelElement: unknown, { writer }: { writer: any }) => {
                 return writer.createContainerElement("h2", {
                   style:
                     "font-size: 1.5rem; font-weight: bold; margin: 0.8rem 0; color: #1f2937;",
@@ -148,7 +152,8 @@ const CKEditorWrapper: FC<CkEditorProps> = ({ setEditorData, editorData }) => {
 
             editor.conversion.for("dataDowncast").elementToElement({
               model: "heading3",
-              view: (modelElement: any, { writer }: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              view: (modelElement: unknown, { writer }: { writer: any }) => {
                 return writer.createContainerElement("h3", {
                   style:
                     "font-size: 1.25rem; font-weight: bold; margin: 0.6rem 0; color: #1f2937;",
@@ -157,7 +162,8 @@ const CKEditorWrapper: FC<CkEditorProps> = ({ setEditorData, editorData }) => {
             });
             editor.conversion.for("dataDowncast").elementToElement({
               model: "heading4",
-              view: (modelElement: any, { writer }: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              view: (modelElement: unknown, { writer }: { writer: any }) => {
                 return writer.createContainerElement("h4", {
                   style:
                     "font-size: 1.125rem; font-weight: bold; margin: 0.5rem 0; color: #1f2937;",
@@ -166,7 +172,8 @@ const CKEditorWrapper: FC<CkEditorProps> = ({ setEditorData, editorData }) => {
             });
             editor.conversion.for("dataDowncast").elementToElement({
               model: "heading5",
-              view: (modelElement: any, { writer }: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              view: (modelElement: unknown, { writer }: { writer: any }) => {
                 return writer.createContainerElement("h5", {
                   style:
                     "font-size: 1rem; font-weight: bold; margin: 0.4rem 0; color: #1f2937;",
@@ -175,7 +182,8 @@ const CKEditorWrapper: FC<CkEditorProps> = ({ setEditorData, editorData }) => {
             });
             editor.conversion.for("dataDowncast").elementToElement({
               model: "heading6",
-              view: (modelElement: any, { writer }: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              view: (modelElement: unknown, { writer }: { writer: any }) => {
                 return writer.createContainerElement("h6", {
                   style:
                     "font-size: 0.875rem; font-weight: bold; margin: 0.3rem 0; color: #1f2937;",
@@ -184,7 +192,8 @@ const CKEditorWrapper: FC<CkEditorProps> = ({ setEditorData, editorData }) => {
             });
             editor.conversion.for("dataDowncast").elementToElement({
               model: "caption",
-              view: (modelElement: any, { writer }: any) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              view: (modelElement: unknown, { writer }: { writer: any }) => {
                 return writer.createContainerElement("figcaption", {
                   style:
                     "text-align: center;margin-top: 0.5rem;font-style: italic;font-size: 0.875rem",

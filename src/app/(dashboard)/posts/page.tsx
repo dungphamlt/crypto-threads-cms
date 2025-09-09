@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { Plus, Grid3X3, List } from "lucide-react";
-import PostGrid from "@/components/post/post-grid-layout";
-import PostTableLayout from "@/components/post/post-table-layout";
-import PostFormModal from "@/components/post/post-create";
+import {
+  PostGridLayout,
+  PostTableLayout,
+  PostCreate,
+  // PostViewDetail,
+} from "@/components/post";
 import type { PostDetail } from "@/services/postService";
 
 type ViewMode = "grid" | "table";
@@ -12,6 +15,8 @@ type ViewMode = "grid" | "table";
 function PostsManagement() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  // const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  // const [viewPostId, setViewPostId] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleCreateSuccess = (post: PostDetail) => {
@@ -19,6 +24,16 @@ function PostsManagement() {
     setRefreshKey((prev) => prev + 1);
     console.log("Post created successfully:", post);
   };
+
+  // const handleEdit = (postId: string) => {
+  //   setViewPostId(postId);
+  //   setIsViewModalOpen(true);
+  // };
+
+  // const handleDelete = (postId: string) => {
+  //   setViewPostId(postId);
+  //   setIsViewModalOpen(true);
+  // };
 
   const handleOpenCreateModal = () => {
     setIsCreateModalOpen(true);
@@ -121,17 +136,25 @@ function PostsManagement() {
           <PostTableLayout key={`table-${refreshKey}`} />
         ) : (
           <div className="p-6">
-            <PostGrid key={`grid-${refreshKey}`} />
+            <PostGridLayout key={`grid-${refreshKey}`} />
           </div>
         )}
       </div>
 
       {/* Create Post Modal */}
-      <PostFormModal
+      <PostCreate
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
         onSuccess={handleCreateSuccess}
       />
+      {/* View Post Modal */}
+      {/* <PostViewDetail
+        postId={viewPostId}
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        // onEdit={handleEdit}
+        // onDelete={handleDelete}
+      /> */}
     </div>
   );
 }

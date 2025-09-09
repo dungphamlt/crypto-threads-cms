@@ -1,32 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Users,
   Shield,
   Crown,
-  Settings,
+  // Settings,
   Search,
-  Calendar,
-  UserCheck,
-  AlertCircle,
-  Edit3,
+  // UserCheck,
+  // Edit3,
   Plus,
 } from "lucide-react";
-import { Admin, AdminRole, adminService } from "@/services/adminService";
-import { authService } from "@/services/authService";
+import { Admin, AdminRole } from "@/services/adminService";
 import FormAddNewAdmin from "@/components/admin/FormAddNewAdmin";
-import AdminCard from "@/components/admin/AdminCard";
+// import AdminCard from "@/components/admin/AdminCard";
 import toast from "react-hot-toast";
 
 export default function AdminManagement() {
   const [adminList, setAdminList] = useState<Admin[]>([]);
-  const [filteredAdmins, setFilteredAdmins] = useState<Admin[]>([]);
-  const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
+  // const [filteredAdmins, setFilteredAdmins] = useState<Admin[]>([]);
+  // const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
   // const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
+  // const [isUpdating, setIsUpdating] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   // const loadAdminList = async () => {
   //   try {
@@ -239,7 +236,7 @@ export default function AdminManagement() {
                     Admin List
                   </h3>
                   <div className="text-sm text-gray-500">
-                    {filteredAdmins.length} of {adminList.length} admins
+                    {/* {filteredAdmins.length} of {adminList.length} admins */}
                   </div>
                 </div>
 
@@ -257,99 +254,22 @@ export default function AdminManagement() {
 
                 {/* Admin Cards */}
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {filteredAdmins.map((admin) => (
+                  {/* {filteredAdmins.map((admin) => (
                     <AdminCard
                       key={admin._id}
                       admin={admin}
                       selected={selectedAdmin?._id === admin._id}
                       onSelect={setSelectedAdmin}
                     />
-                  ))}
+                  ))} */}
                 </div>
               </div>
 
               {/* Admin Details */}
-              <div className="space-y-6">
-                {selectedAdmin ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-2xl font-bold text-gray-800 flex items-center">
-                        <Settings className="w-6 h-6 mr-2 text-purple-600" />
-                        Admin Details
-                      </h3>
-                      <div className="flex items-center space-x-2">
-                        <Edit3 className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-500">Edit Mode</span>
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl p-6 space-y-6">
-                      {/* Basic Info */}
-                      <div className="grid grid-cols-1 gap-4">
-                        <div className="p-4 bg-white rounded-xl border border-gray-200">
-                          <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
-                            <UserCheck className="w-4 h-4 mr-2 text-blue-600" />
-                            Username
-                          </h4>
-                          <p className="text-lg text-gray-800 font-medium">
-                            {selectedAdmin.username}
-                          </p>
-                        </div>
-
-                        {/* Role Selection */}
-                        <div className="p-4 bg-white rounded-xl border border-gray-200">
-                          <h4 className="font-semibold text-gray-700 mb-3 flex items-center">
-                            <Shield className="w-4 h-4 mr-2 text-purple-600" />
-                            Admin Role
-                          </h4>
-                          <div className="relative">
-                            <select
-                              value={selectedAdmin.role}
-                              disabled={isUpdating}
-                              className="w-full p-3 rounded-xl border-2 border-gray-200 bg-gray-50 focus:border-purple-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-purple-100 transition-all duration-300 appearance-none disabled:opacity-50"
-                            >
-                              {Object.values(AdminRole).map((role) => (
-                                <option key={role} value={role}>
-                                  {role}
-                                </option>
-                              ))}
-                            </select>
-                            {isUpdating && (
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                <div className="w-5 h-5 border-2 border-purple-200 rounded-full animate-spin border-t-purple-600"></div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-96 text-center">
-                    <div className="w-20 h-20 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full flex items-center justify-center mb-4">
-                      <Users className="w-10 h-10 text-gray-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                      Select an Admin
-                    </h3>
-                    <p className="text-gray-500">
-                      Choose an admin from the list to view and edit their
-                      details
-                    </p>
-                  </div>
-                )}
-              </div>
+              <div className="space-y-6"></div>
             </div>
 
             {/* Status Messages */}
-            {error && (
-              <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-pink-50 border border-red-200">
-                <div className="flex items-center">
-                  <AlertCircle className="text-red-500 w-5 h-5 mr-2" />
-                  <p className="text-red-700 font-medium">{error}</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
         <FormAddNewAdmin

@@ -205,7 +205,7 @@ export default function LoginPage() {
                 Forgot your password?
               </button>
               <p className="text-muted-foreground text-sm">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link
                   href="/register"
                   className="text-secondary hover:text-secondary/80 font-medium transition-colors duration-200 underline-offset-4 hover:underline"

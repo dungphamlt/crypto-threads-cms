@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import ProTable, {
   type ProColumns,
   type ActionType,
@@ -30,7 +30,8 @@ import {
 } from "@ant-design/icons";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { type PostDetail, postService } from "@/services/postService";
-import { POST_STATUS } from "@/types";
+import { categoryService } from "@/services/categoryService";
+import { POST_STATUS, SubCategory } from "@/types";
 import { toast } from "react-hot-toast";
 import PostViewDetail from "@/components/post/post-view-detail";
 import PostFormModal from "@/components/post/post-create";
@@ -48,14 +49,79 @@ function PostTableLayout() {
   const [editPost, setEditPost] = useState<PostDetail | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  // Load categories and subcategories
+  const { data: categoriesResponse } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryService.getCategoryList(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const categories = categoriesResponse?.success
+    ? categoriesResponse.data || []
+    : [];
+
+  // State to cache subcategory names
+  const [subCategoryNames, setSubCategoryNames] = useState<
+    Record<string, string>
+  >({});
+
+  // Helper function to get subcategory name
+  const getSubCategoryName = (subCategoryId: string) => {
+    return subCategoryNames[subCategoryId] || subCategoryId;
+  };
+
+  // Load subcategory names when categories change
+  useEffect(() => {
+    const loadSubCategoryNames = async () => {
+      if (categories.length === 0) return;
+
+      const subCategoryMap: Record<string, string> = {};
+
+      for (const category of categories) {
+        try {
+          const response = await categoryService.getSubCategoryList(
+            category.id
+          );
+          if (response.success && response.data) {
+            response.data.forEach((sub: SubCategory) => {
+              subCategoryMap[sub.id] = sub.key;
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Failed to load subcategories for ${category.key}:`,
+            error
+          );
+        }
+      }
+
+      setSubCategoryNames(subCategoryMap);
+    };
+
+    loadSubCategoryNames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Create Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Fetch posts with React Query
-  const fetchPosts = async (params: any) => {
+  const fetchPosts = async (params: Record<string, unknown>) => {
     setLoading(true);
     try {
-      const { current = 1, pageSize = 10, title, category, status } = params;
+      const {
+        current = 1,
+        pageSize = 10,
+        title,
+        category,
+        status,
+      } = params as {
+        current?: number;
+        pageSize?: number;
+        title?: string;
+        category?: string;
+        status?: string;
+      };
 
       const response = await postService.getPostList(current, pageSize);
 
@@ -184,6 +250,7 @@ function PostTableLayout() {
   // Handle post success (create/edit)
   const handlePostSuccess = (post: PostDetail) => {
     // Refresh the table
+    console.log("Post updated successfully", post);
     actionRef.current?.reload();
     queryClient.invalidateQueries({ queryKey: ["posts"] });
 
@@ -370,27 +437,36 @@ function PostTableLayout() {
       dataIndex: "category",
       key: "category",
       width: 120,
-      render: (category, record) => (
-        <div className="space-y-1">
-          <Tag color="blue" className="font-medium">
-            {category}
-          </Tag>
-          {record.subCategory && (
-            <Tag color="cyan" className="text-xs">
-              {record.subCategory}
+      render: (category, record) => {
+        // Find category name from API data
+        const categoryData = categories.find(
+          (cat: { id: string; key: string }) => cat.id === category
+        );
+        const categoryName = categoryData?.key || category || "Unknown";
+
+        return (
+          <div className="space-y-1">
+            <Tag color="blue" className="font-medium">
+              {categoryName}
             </Tag>
-          )}
-        </div>
-      ),
-      valueEnum: {
-        technology: { text: "Technology" },
-        crypto: { text: "Cryptocurrency" },
-        blockchain: { text: "Blockchain" },
-        finance: { text: "Finance" },
-        news: { text: "News" },
-        tutorial: { text: "Tutorial" },
-        analysis: { text: "Analysis" },
+            {record.subCategory && (
+              <Tag color="cyan" className="text-xs">
+                {getSubCategoryName(record.subCategory)}
+              </Tag>
+            )}
+          </div>
+        );
       },
+      valueEnum: categories.reduce(
+        (
+          acc: Record<string, { text: string }>,
+          cat: { id: string; key: string }
+        ) => {
+          acc[cat.id] = { text: cat.key };
+          return acc;
+        },
+        {}
+      ),
     },
     {
       title: "Tags",
@@ -468,11 +544,13 @@ function PostTableLayout() {
               ? new Date(String(updatedAt)).toLocaleDateString()
               : "N/A"}
           </div>
-          {(record as any).publishedAt && (
+          {(record as PostDetail & { publishedAt?: string }).publishedAt && (
             <div className="text-green-600 text-xs">
               Published:{" "}
               {new Date(
-                String((record as any).publishedAt)
+                String(
+                  (record as PostDetail & { publishedAt?: string }).publishedAt
+                )
               ).toLocaleDateString()}
             </div>
           )}
@@ -622,8 +700,8 @@ function PostTableLayout() {
               setIsViewModalOpen(false);
               setViewPostId("");
             }}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+            // onEdit={handleEdit}
+            // onDelete={handleDelete}
           />
         )}
 
