@@ -30,7 +30,12 @@ const nextConfig: NextConfig = {
     "@ckeditor/ckeditor5-image",
     "@ckeditor/ckeditor5-font",
   ],
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    // Suppress specific warnings
+    if (!isServer) {
+      config.ignoreWarnings = [/dropdownRender.*deprecated.*popupRender/i];
+    }
+
     // Inline CKEditor SVG icons as raw string
     config.module.rules.push({
       test: /ckeditor5-[^/\\]+[/\\]theme[/\\]icons[/\\][^/\\]+\.svg$/,

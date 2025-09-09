@@ -87,49 +87,6 @@ function PostsManagement() {
         </div>
       </div>
 
-      {/* Stats Bar (Optional) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Posts</p>
-              <p className="text-2xl font-bold text-gray-900">-</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <List className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Published</p>
-              <p className="text-2xl font-bold text-green-600">-</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <div className="h-6 w-6 bg-green-600 rounded-full flex items-center justify-center">
-                <div className="h-2 w-2 bg-white rounded-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Drafts</p>
-              <p className="text-2xl font-bold text-orange-600">-</p>
-            </div>
-            <div className="p-3 bg-orange-100 rounded-full">
-              <div className="h-6 w-6 bg-orange-600 rounded-full flex items-center justify-center">
-                <div className="h-2 w-2 bg-white rounded-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Content */}
       <div className="bg-white rounded-lg shadow-sm">
         {viewMode === "table" ? (

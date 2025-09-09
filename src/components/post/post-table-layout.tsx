@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import ProTable, {
   type ProColumns,
   type ActionType,
@@ -27,11 +27,15 @@ import {
   ClockCircleOutlined,
   EditOutlined as DraftOutlined,
   DeleteOutlined as TrashOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  ClearOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useQueries } from "@tanstack/react-query";
 import { type PostDetail, postService } from "@/services/postService";
 import { categoryService } from "@/services/categoryService";
-import { POST_STATUS, SubCategory } from "@/types";
+import { POST_STATUS, type SubCategory } from "@/types";
 import { toast } from "react-hot-toast";
 import PostViewDetail from "@/components/post/post-view-detail";
 import PostFormModal from "@/components/post/post-create";
@@ -60,67 +64,51 @@ function PostTableLayout() {
     ? categoriesResponse.data || []
     : [];
 
-  // State to cache subcategory names
-  const [subCategoryNames, setSubCategoryNames] = useState<
-    Record<string, string>
-  >({});
+  // Load subcategories using useQueries
+  const subCategoryQueries = useQueries({
+    queries: categories.map((category) => ({
+      queryKey: ["subCategories", category.id],
+      queryFn: () => categoryService.getSubCategoryList(category.id),
+      enabled: categories.length > 0,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 2,
+    })),
+  });
+
+  // Build subcategory names map from queries
+  const subCategoryNames: Record<string, string> = {};
+  subCategoryQueries.forEach((query) => {
+    if (query.data?.success && query.data.data) {
+      query.data.data.forEach((sub: SubCategory) => {
+        subCategoryNames[sub.id] = sub.key;
+      });
+    }
+  });
 
   // Helper function to get subcategory name
   const getSubCategoryName = (subCategoryId: string) => {
     return subCategoryNames[subCategoryId] || subCategoryId;
   };
 
-  // Load subcategory names when categories change
-  useEffect(() => {
-    const loadSubCategoryNames = async () => {
-      if (categories.length === 0) return;
-
-      const subCategoryMap: Record<string, string> = {};
-
-      for (const category of categories) {
-        try {
-          const response = await categoryService.getSubCategoryList(
-            category.id
-          );
-          if (response.success && response.data) {
-            response.data.forEach((sub: SubCategory) => {
-              subCategoryMap[sub.id] = sub.key;
-            });
-          }
-        } catch (error) {
-          console.error(
-            `Failed to load subcategories for ${category.key}:`,
-            error
-          );
-        }
-      }
-
-      setSubCategoryNames(subCategoryMap);
-    };
-
-    loadSubCategoryNames();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Create Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Filter States
+  const [filters, setFilters] = useState({
+    title: "",
+    category: "",
+    status: "",
+  });
+
+  const [isFilterExpanded, setIsFilterExpanded] = useState(true);
 
   // Fetch posts with React Query
   const fetchPosts = async (params: Record<string, unknown>) => {
     setLoading(true);
     try {
-      const {
-        current = 1,
-        pageSize = 10,
-        title,
-        category,
-        status,
-      } = params as {
+      const { current = 1, pageSize = 10 } = params as {
         current?: number;
         pageSize?: number;
-        title?: string;
-        category?: string;
-        status?: string;
       };
 
       const response = await postService.getPostList(current, pageSize);
@@ -128,25 +116,29 @@ function PostTableLayout() {
       if (response.success && response.data) {
         let filteredPosts = [...response.data];
 
-        // Apply filters
-        if (title) {
+        // Apply filters from state
+        if (filters.title) {
           filteredPosts = filteredPosts.filter(
             (post) =>
-              post.title.toLowerCase().includes(title.toLowerCase()) ||
-              post.excerpt?.toLowerCase().includes(title.toLowerCase()) ||
-              post.metaDescription?.toLowerCase().includes(title.toLowerCase())
+              post.title.toLowerCase().includes(filters.title.toLowerCase()) ||
+              post.excerpt
+                ?.toLowerCase()
+                .includes(filters.title.toLowerCase()) ||
+              post.metaDescription
+                ?.toLowerCase()
+                .includes(filters.title.toLowerCase())
           );
         }
 
-        if (category) {
+        if (filters.category) {
           filteredPosts = filteredPosts.filter(
-            (post) => post.category === category
+            (post) => post.category === filters.category
           );
         }
 
-        if (status) {
+        if (filters.status) {
           filteredPosts = filteredPosts.filter(
-            (post) => post.status === status
+            (post) => post.status === filters.status
           );
         }
 
@@ -262,6 +254,38 @@ function PostTableLayout() {
     toast.success("Post updated successfully");
   };
 
+  // Handle filter changes
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      title: "",
+      category: "",
+      status: "",
+    });
+    actionRef.current?.reload();
+    toast.success("Search cleared");
+  };
+
+  // Apply filters
+  const applyFilters = () => {
+    actionRef.current?.reload();
+    toast.success("Search applied");
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      applyFilters();
+    }
+  };
+
   // Enhanced Status Badge Component
   const StatusBadge = ({ status }: { status: string | undefined }) => {
     const normalizedStatus = String(status || "").toLowerCase();
@@ -328,13 +352,12 @@ function PostTableLayout() {
       title: "Cover",
       key: "cover",
       width: 100,
-      search: false,
       render: (_, record) => (
         <div className="flex justify-center">
           <Image
             width={60}
             height={45}
-            src={record.coverUrl}
+            src={record.coverUrl || "/placeholder.svg"}
             alt={record.title}
             className="rounded-lg object-cover shadow-sm"
             placeholder={
@@ -392,7 +415,6 @@ function PostTableLayout() {
       dataIndex: "metaDescription",
       key: "metaDescription",
       width: 200,
-      search: false,
       render: (metaDescription) => (
         <div
           className="text-sm text-gray-500 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
@@ -473,7 +495,6 @@ function PostTableLayout() {
       dataIndex: "tags",
       key: "tags",
       width: 150,
-      search: false,
       render: (tags) => (
         <div className="flex flex-wrap gap-1">
           {Array.isArray(tags) && tags.length > 0 ? (
@@ -500,18 +521,6 @@ function PostTableLayout() {
       dataIndex: "status",
       key: "status",
       width: 140,
-      search: {
-        transform: (value) => ({ status: value }),
-      },
-      valueType: "select",
-      fieldProps: {
-        options: [
-          { label: "Draft", value: POST_STATUS.DRAFT },
-          { label: "Published", value: POST_STATUS.PUBLISHED },
-          { label: "Trash", value: POST_STATUS.TRASH },
-          { label: "Scheduled", value: POST_STATUS.SCHEDULE },
-        ],
-      },
       render: (_, record) => {
         return <StatusBadge status={record.status} />;
       },
@@ -520,7 +529,6 @@ function PostTableLayout() {
       title: "Stats",
       key: "stats",
       width: 100,
-      search: false,
       render: (_, record) => (
         <div className="text-xs space-y-1">
           <div className="flex items-center text-gray-600">
@@ -561,7 +569,6 @@ function PostTableLayout() {
       title: "Actions",
       key: "actions",
       width: 120,
-      search: false,
       fixed: "right",
       render: (_, record) => (
         <Space size="small" className="flex-nowrap">
@@ -608,6 +615,163 @@ function PostTableLayout() {
     },
   ];
 
+  const renderFilterSection = () => {
+    return (
+      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 m-6 mb-4">
+        <div className="px-6 py-4">
+          {/* Filter Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Search Input */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <SearchOutlined className="text-slate-400" />
+                Search Content
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by title, excerpt, or meta description..."
+                  value={filters.title}
+                  onChange={(e) => handleFilterChange("title", e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="w-full h-12 pl-10 pr-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
+                />
+                <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                {filters.title && (
+                  <button
+                    onClick={() => handleFilterChange("title", "")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <ClearOutlined />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Category Select */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <span className="w-3 h-3 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                </span>
+                Category
+              </label>
+              <div className="relative">
+                <select
+                  value={filters.category || ""}
+                  onChange={(e) =>
+                    handleFilterChange("category", e.target.value)
+                  }
+                  className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                >
+                  <option value="">Select category</option>
+                  {categories.map((cat: { id: string; key: string }) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.key}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                {filters.category && (
+                  <button
+                    onClick={() => handleFilterChange("category", "")}
+                    className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <CloseOutlined />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Status Select */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <span className="w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircleOutlined className="text-green-500 text-xs" />
+                </span>
+                Status
+              </label>
+              <div className="relative">
+                <select
+                  value={filters.status || ""}
+                  onChange={(e) => handleFilterChange("status", e.target.value)}
+                  className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                >
+                  <option value="">Select status</option>
+                  <option value={POST_STATUS.DRAFT}>Draft</option>
+                  <option value={POST_STATUS.PUBLISHED}>Published</option>
+                  <option value={POST_STATUS.TRASH}>Trash</option>
+                  <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
+                </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                {filters.status && (
+                  <button
+                    onClick={() => handleFilterChange("status", "")}
+                    className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <CloseOutlined />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 opacity-0">
+                Actions
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={applyFilters}
+                  className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <SearchOutlined />
+                  Search
+                </button>
+                <button
+                  onClick={clearFilters}
+                  disabled={!filters.title}
+                  className="h-12 px-4 border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ClearOutlined />
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <ConfigProvider
       locale={enUS}
@@ -627,6 +791,8 @@ function PostTableLayout() {
       }}
     >
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {renderFilterSection()}
+
         <ProTable<PostDetail>
           columns={columns}
           actionRef={actionRef}
@@ -642,10 +808,7 @@ function PostTableLayout() {
             pageSizeOptions: ["10", "20", "50", "100"],
             size: "default",
           }}
-          search={{
-            labelWidth: "auto",
-            filterType: "light",
-          }}
+          search={false}
           options={{
             setting: {
               listsHeight: 400,
@@ -654,29 +817,6 @@ function PostTableLayout() {
             density: true,
             fullScreen: true,
           }}
-          // toolBarRender={() => [
-          //   <Button
-          //     key="refresh"
-          //     icon={<SyncOutlined />}
-          //     onClick={() => {
-          //       actionRef.current?.reload();
-          //       queryClient.invalidateQueries({ queryKey: ["posts"] });
-          //       toast.success("Posts refreshed");
-          //     }}
-          //     className="hover:bg-gray-50"
-          //   >
-          //     Refresh
-          //   </Button>,
-          //   <Button
-          //     key="add"
-          //     type="primary"
-          //     icon={<PlusOutlined />}
-          //     onClick={() => setIsCreateModalOpen(true)}
-          //     className="bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-sm"
-          //   >
-          //     Create Post
-          //   </Button>,
-          // ]}
           scroll={{ x: 1400 }}
           headerTitle={
             <div className="flex items-center space-x-2">
