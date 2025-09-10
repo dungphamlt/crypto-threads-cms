@@ -28,7 +28,7 @@ import {
   EditOutlined as DraftOutlined,
   DeleteOutlined as TrashOutlined,
   SearchOutlined,
-  FilterOutlined,
+  // FilterOutlined,
   ClearOutlined,
   CloseOutlined,
 } from "@ant-design/icons";
@@ -100,7 +100,7 @@ function PostTableLayout() {
     status: "",
   });
 
-  const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+  // const [isFilterExpanded, setIsFilterExpanded] = useState(true);
 
   // Fetch posts with React Query
   const fetchPosts = async (params: Record<string, unknown>) => {
