@@ -135,7 +135,7 @@ export default function PostFormModal({
   const { data: subCategoriesResponse, isLoading: subCategoriesLoading } =
     useQuery({
       queryKey: ["subCategories", post.category],
-      queryFn: () => categoryService.getSubCategoryList(post.category),
+      queryFn: () => categoryService.getSubCategoryByCategoryId(post.category),
       enabled: !!post.category, // Only fetch when category is selected
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 2,

@@ -52,7 +52,7 @@ export default function CategoryCard({
     queries: [
       {
         queryKey: ["subCategories", category.id],
-        queryFn: () => categoryService.getSubCategoryList(category.id),
+        queryFn: () => categoryService.getSubCategoryByCategoryId(category.id),
         enabled: !!category.id,
         staleTime: 5 * 60 * 1000, // 5 minutes
         retry: 2,

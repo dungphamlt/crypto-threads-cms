@@ -1,14 +1,46 @@
 import { Post, PostDetail } from "@/types";
 import { post, get, del, patch } from "./api";
 
+export interface PostListParams {
+  page: number;
+  pageSize: number;
+  startDate?: string;
+  endDate?: string;
+  category?: string;
+  subCategory?: string;
+  search?: string;
+  creator?: string;
+  status?: string;
+  slug?: string;
+}
+
+export interface PostListResponse {
+  data: PostDetail[];
+  pagination: {
+    currentPage: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
 export const postService = {
   createPost: (postData: Post) => {
     return post<PostDetail>("/content-management/articles", postData);
   },
 
-  getPostList: (page: number = 1, pageSize: number = 10) => {
-    return get<PostDetail[]>(
-      `/content-management/articles?page=${page}&pageSize=${pageSize}`
+  getPostList: (params: PostListParams) => {
+    // Build URL params with only non-empty values
+    const urlParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== "") {
+        urlParams.append(key, String(value));
+      }
+    });
+
+    return get<PostListResponse>(
+      `/content-management/articles?${urlParams.toString()}`
     );
   },
 

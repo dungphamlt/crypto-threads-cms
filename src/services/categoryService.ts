@@ -6,7 +6,11 @@ export const categoryService = {
     return get<Category[]>("/content-management/categories");
   },
 
-  getSubCategoryList: (categoryId: string) => {
+  getSubCategoryList: () => {
+    return get<SubCategory[]>("/content-management/sub-categories");
+  },
+
+  getSubCategoryByCategoryId: (categoryId: string) => {
     return get<SubCategory[]>(
       `/content-management/sub-categories/category/${categoryId}`
     );

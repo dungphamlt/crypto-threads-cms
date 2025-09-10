@@ -14,7 +14,6 @@ import {
   Image,
   ConfigProvider,
   Tooltip,
-  Badge,
 } from "antd";
 import enUS from "antd/locale/en_US";
 import {
@@ -32,7 +31,7 @@ import {
   ClearOutlined,
   CloseOutlined,
 } from "@ant-design/icons";
-import { useQueryClient, useQuery, useQueries } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { type PostDetail, postService } from "@/services/postService";
 import { categoryService } from "@/services/categoryService";
 import { POST_STATUS, type SubCategory } from "@/types";
@@ -64,31 +63,22 @@ function PostTableLayout() {
     ? categoriesResponse.data || []
     : [];
 
-  // Load subcategories using useQueries
-  const subCategoryQueries = useQueries({
-    queries: categories.map((category) => ({
-      queryKey: ["subCategories", category.id],
-      queryFn: () => categoryService.getSubCategoryList(category.id),
-      enabled: categories.length > 0,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 2,
-    })),
+  // Load subcategories
+  const { data: subCategoriesResponse } = useQuery({
+    queryKey: ["subCategories"],
+    queryFn: () => categoryService.getSubCategoryList(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  const subCategories = subCategoriesResponse?.success
+    ? subCategoriesResponse.data || []
+    : [];
 
   // Build subcategory names map from queries
   const subCategoryNames: Record<string, string> = {};
-  subCategoryQueries.forEach((query) => {
-    if (query.data?.success && query.data.data) {
-      query.data.data.forEach((sub: SubCategory) => {
-        subCategoryNames[sub.id] = sub.key;
-      });
-    }
+  subCategories.forEach((query: SubCategory) => {
+    subCategoryNames[query.id] = query.key;
   });
-
-  // Helper function to get subcategory name
-  const getSubCategoryName = (subCategoryId: string) => {
-    return subCategoryNames[subCategoryId] || subCategoryId;
-  };
 
   // Create Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -97,7 +87,11 @@ function PostTableLayout() {
   const [filters, setFilters] = useState({
     title: "",
     category: "",
+    subCategory: "",
+    creator: "",
     status: "",
+    startDate: "",
+    endDate: "",
   });
 
   // const [isFilterExpanded, setIsFilterExpanded] = useState(true);
@@ -106,46 +100,28 @@ function PostTableLayout() {
   const fetchPosts = async (params: Record<string, unknown>) => {
     setLoading(true);
     try {
-      const { current = 1, pageSize = 10 } = params as {
+      const { current = 1, pageSize: newPageSize = 10 } = params as {
         current?: number;
         pageSize?: number;
       };
 
-      const response = await postService.getPostList(current, pageSize);
+      const response = await postService.getPostList({
+        page: current,
+        pageSize: newPageSize,
+        search: filters.title || undefined,
+        category: filters.category || undefined,
+        subCategory: filters.subCategory || undefined,
+        creator: filters.creator || undefined,
+        status: filters.status || undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+      });
 
-      if (response.success && response.data) {
-        let filteredPosts = [...response.data];
-
-        // Apply filters from state
-        if (filters.title) {
-          filteredPosts = filteredPosts.filter(
-            (post) =>
-              post.title.toLowerCase().includes(filters.title.toLowerCase()) ||
-              post.excerpt
-                ?.toLowerCase()
-                .includes(filters.title.toLowerCase()) ||
-              post.metaDescription
-                ?.toLowerCase()
-                .includes(filters.title.toLowerCase())
-          );
-        }
-
-        if (filters.category) {
-          filteredPosts = filteredPosts.filter(
-            (post) => post.category === filters.category
-          );
-        }
-
-        if (filters.status) {
-          filteredPosts = filteredPosts.filter(
-            (post) => post.status === filters.status
-          );
-        }
-
+      if (response.success && response.data?.data) {
         return {
-          data: filteredPosts,
+          data: response.data.data,
           success: true,
-          total: filteredPosts.length,
+          total: response.data.pagination.totalItems,
         };
       } else {
         toast.error(response.error || "Failed to fetch posts");
@@ -267,7 +243,11 @@ function PostTableLayout() {
     setFilters({
       title: "",
       category: "",
+      subCategory: "",
+      creator: "",
       status: "",
+      startDate: "",
+      endDate: "",
     });
     actionRef.current?.reload();
     toast.success("Search cleared");
@@ -441,14 +421,14 @@ function PostTableLayout() {
             className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold"
             icon={<UserOutlined />}
           >
-            {record.creator?.email?.charAt(0).toUpperCase() || "U"}
+            {String(record.creator?.email?.charAt(0) || "U").toUpperCase()}
           </Avatar>
           <div>
             <div className="text-sm font-medium text-gray-900">
-              {record.creator?.email || "Unknown"}
+              {String(record.creator?.email || "Unknown")}
             </div>
             <div className="text-xs text-gray-500">
-              ID: {record.creator?.id?.slice(-8) || "N/A"}
+              ID: {String(record.creator?.id || "N/A").slice(-8)}
             </div>
           </div>
         </div>
@@ -460,16 +440,58 @@ function PostTableLayout() {
       key: "category",
       width: 120,
       render: (category, record) => {
-        // Find category name from API data
-        const categoryData = categories.find(
-          (cat: { id: string; key: string }) => cat.id === category
-        );
-        const categoryName = categoryData?.key || category || "Unknown";
+        // Helper function to get category name
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const getCategoryName = (cat: any): string => {
+          if (!cat) return "Unknown";
+
+          // If it's already a string, return as is
+          if (typeof cat === "string") {
+            const found = categories.find((c) => c.id === cat || c.key === cat);
+            return found?.key || cat;
+          }
+
+          // If it's an object with key property
+          if (typeof cat === "object" && cat.key) {
+            return cat.key;
+          }
+
+          // If it's an object with id property
+          if (typeof cat === "object" && cat.id) {
+            const found = categories.find((c) => c.id === cat.id);
+            return found?.key || cat.id;
+          }
+
+          return "Unknown";
+        };
+
+        // Helper function to get subcategory name
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const getSubCategoryName = (subCat: any): string => {
+          if (!subCat) return "";
+
+          // If it's already a string, return as is
+          if (typeof subCat === "string") {
+            return subCategoryNames[subCat] || subCat;
+          }
+
+          // If it's an object with key property
+          if (typeof subCat === "object" && subCat.key) {
+            return subCat.key;
+          }
+
+          // If it's an object with id property
+          if (typeof subCat === "object" && subCat.id) {
+            return subCategoryNames[subCat.id] || subCat.id;
+          }
+
+          return String(subCat);
+        };
 
         return (
           <div className="space-y-1">
             <Tag color="blue" className="font-medium">
-              {categoryName}
+              {getCategoryName(category)}
             </Tag>
             {record.subCategory && (
               <Tag color="cyan" className="text-xs">
@@ -479,16 +501,6 @@ function PostTableLayout() {
           </div>
         );
       },
-      valueEnum: categories.reduce(
-        (
-          acc: Record<string, { text: string }>,
-          cat: { id: string; key: string }
-        ) => {
-          acc[cat.id] = { text: cat.key };
-          return acc;
-        },
-        {}
-      ),
     },
     {
       title: "Tags",
@@ -499,13 +511,19 @@ function PostTableLayout() {
         <div className="flex flex-wrap gap-1">
           {Array.isArray(tags) && tags.length > 0 ? (
             <>
-              {tags.slice(0, 2).map((tag: string, index: number) => (
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {tags.slice(0, 2).map((tag: any, index: number) => (
                 <Tag key={index} color="purple" className="text-xs">
-                  {tag}
+                  {String(tag)}
                 </Tag>
               ))}
               {tags.length > 2 && (
-                <Tooltip title={tags.slice(2).join(", ")}>
+                <Tooltip
+                  title={tags
+                    .slice(2)
+                    .map((t) => String(t))
+                    .join(", ")}
+                >
                   <Tag className="text-xs cursor-help">+{tags.length - 2}</Tag>
                 </Tooltip>
               )}
@@ -532,7 +550,7 @@ function PostTableLayout() {
       render: (_, record) => (
         <div className="text-xs space-y-1">
           <div className="flex items-center text-gray-600">
-            <span>👁️ {record.views || 0}</span>
+            <span>👁️ {String(record.views || 0)}</span>
           </div>
           <div className="text-gray-500">ID: {String(record.id).slice(-8)}</div>
         </div>
@@ -616,38 +634,20 @@ function PostTableLayout() {
   ];
 
   const renderFilterSection = () => {
+    const hasActiveFilters =
+      filters.title ||
+      filters.category ||
+      filters.subCategory ||
+      filters.creator ||
+      filters.status ||
+      filters.startDate ||
+      filters.endDate;
+
     return (
       <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 m-6 mb-4">
         <div className="px-6 py-4">
           {/* Filter Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Search Input */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <SearchOutlined className="text-slate-400" />
-                Search Content
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search by title, excerpt, or meta description..."
-                  value={filters.title}
-                  onChange={(e) => handleFilterChange("title", e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="w-full h-12 pl-10 pr-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
-                />
-                <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                {filters.title && (
-                  <button
-                    onClick={() => handleFilterChange("title", "")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    <ClearOutlined />
-                  </button>
-                )}
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Category Select */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
@@ -662,7 +662,7 @@ function PostTableLayout() {
                   onChange={(e) =>
                     handleFilterChange("category", e.target.value)
                   }
-                  className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
                   <option value="">Select category</option>
                   {categories.map((cat: { id: string; key: string }) => (
@@ -697,25 +697,30 @@ function PostTableLayout() {
               </div>
             </div>
 
-            {/* Status Select */}
+            {/* Sub-Category Select */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <span className="w-3 h-3 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircleOutlined className="text-green-500 text-xs" />
+                <span className="w-3 h-3 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
                 </span>
-                Status
+                Sub-Category
               </label>
               <div className="relative">
                 <select
-                  value={filters.status || ""}
-                  onChange={(e) => handleFilterChange("status", e.target.value)}
-                  className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                  value={filters.subCategory || ""}
+                  onChange={(e) =>
+                    handleFilterChange("subCategory", e.target.value)
+                  }
+                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
-                  <option value="">Select status</option>
-                  <option value={POST_STATUS.DRAFT}>Draft</option>
-                  <option value={POST_STATUS.PUBLISHED}>Published</option>
-                  <option value={POST_STATUS.TRASH}>Trash</option>
-                  <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
+                  <option value="">Select sub-category</option>
+                  <option value="bitcoin">Bitcoin</option>
+                  <option value="ethereum">Ethereum</option>
+                  <option value="defi">DeFi</option>
+                  <option value="nft">NFT</option>
+                  <option value="trading">Trading</option>
+                  <option value="mining">Mining</option>
+                  <option value="security">Security</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg
@@ -732,9 +737,9 @@ function PostTableLayout() {
                     />
                   </svg>
                 </div>
-                {filters.status && (
+                {filters.subCategory && (
                   <button
-                    onClick={() => handleFilterChange("status", "")}
+                    onClick={() => handleFilterChange("subCategory", "")}
                     className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <CloseOutlined />
@@ -743,23 +748,189 @@ function PostTableLayout() {
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Creator Select */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 opacity-0">
-                Actions
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <UserOutlined className="text-slate-400" />
+                Creator
               </label>
-              <div className="flex gap-2">
+              <div className="relative">
+                <select
+                  value={filters.creator || ""}
+                  onChange={(e) =>
+                    handleFilterChange("creator", e.target.value)
+                  }
+                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                >
+                  <option value="">Select creator</option>
+                  <option value="admin">Admin</option>
+                  <option value="editor">Editor</option>
+                  <option value="author">Author</option>
+                  <option value="guest">Guest Writer</option>
+                </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                {filters.creator && (
+                  <button
+                    onClick={() => handleFilterChange("creator", "")}
+                    className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <CloseOutlined />
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Start Date */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <CalendarOutlined className="text-slate-400" />
+                Start Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) =>
+                    handleFilterChange("startDate", e.target.value)
+                  }
+                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
+                />
+                {filters.startDate && (
+                  <button
+                    onClick={() => handleFilterChange("startDate", "")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <CloseOutlined />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* End Date */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <CalendarOutlined className="text-slate-400" />
+                End Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) =>
+                    handleFilterChange("endDate", e.target.value)
+                  }
+                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
+                />
+                {filters.endDate && (
+                  <button
+                    onClick={() => handleFilterChange("endDate", "")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <CloseOutlined />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Search Input */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <SearchOutlined className="text-slate-400" />
+                Search Content
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by title"
+                  value={filters.title}
+                  onChange={(e) => handleFilterChange("title", e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="w-full h-10 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
+                />
+                <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                {filters.title && (
+                  <button
+                    onClick={() => handleFilterChange("title", "")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <ClearOutlined />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Status Select */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <CheckCircleOutlined className="text-green-500 text-xs" />
+                  Status
+                </label>
+                <div className="relative">
+                  <select
+                    value={filters.status || ""}
+                    onChange={(e) =>
+                      handleFilterChange("status", e.target.value)
+                    }
+                    className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                  >
+                    <option value="">Select status</option>
+                    <option value={POST_STATUS.DRAFT}>Draft</option>
+                    <option value={POST_STATUS.PUBLISHED}>Published</option>
+                    <option value={POST_STATUS.TRASH}>Trash</option>
+                    <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                  {filters.status && (
+                    <button
+                      onClick={() => handleFilterChange("status", "")}
+                      className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <CloseOutlined />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* Action Buttons */}
+              <div className="flex gap-2 items-end">
                 <button
                   onClick={applyFilters}
-                  className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <SearchOutlined />
                   Search
                 </button>
                 <button
                   onClick={clearFilters}
-                  disabled={!filters.title}
-                  className="h-12 px-4 border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-700 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!hasActiveFilters}
+                  className="h-10 px-4 border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ClearOutlined />
                   Clear
@@ -814,18 +985,10 @@ function PostTableLayout() {
               listsHeight: 400,
             },
             reload: true,
-            density: true,
+            density: false,
             fullScreen: true,
           }}
           scroll={{ x: 1400 }}
-          headerTitle={
-            <div className="flex items-center space-x-2">
-              <span className="text-lg font-semibold text-gray-900">
-                Posts Management
-              </span>
-              <Badge count={0} showZero={false} />
-            </div>
-          }
           dateFormatter="string"
           size="middle"
           rowClassName="hover:shadow-sm transition-shadow duration-200"

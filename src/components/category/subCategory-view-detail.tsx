@@ -55,7 +55,7 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
 
   const handleBackToCategory = () => {
     if (onBackToCategory && subCategory?.categoryId) {
-      onBackToCategory(subCategory.categoryId);
+      onBackToCategory(subCategory.categoryId.id);
     }
   };
 
@@ -74,7 +74,7 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
             // Fetch parent category info
             if (response.data.categoryId) {
               const parentResponse = await categoryService.getCategoryDetail(
-                response.data.categoryId
+                response.data.categoryId.id
               );
               if (parentResponse.success && parentResponse.data) {
                 setParentCategory(parentResponse.data);

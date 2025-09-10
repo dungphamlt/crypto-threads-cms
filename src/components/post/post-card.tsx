@@ -225,7 +225,7 @@ export default function PostCard({
       {post.coverUrl && (
         <div className="mt-1">
           <Image
-            src={post.coverUrl || "/placeholder.svg"}
+            src={post.coverUrl.startsWith("http") ? post.coverUrl : `/logo.png`}
             alt="Ảnh nội dung bài viết"
             width={400}
             height={300}

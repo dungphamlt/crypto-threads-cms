@@ -88,7 +88,10 @@ export interface Category {
 export interface SubCategory {
   id: string;
   key: string;
-  categoryId: string;
+  categoryId: {
+    id: string;
+    key: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

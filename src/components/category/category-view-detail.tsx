@@ -82,7 +82,9 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
 
       const fetchSubCategories = async () => {
         try {
-          const response = await categoryService.getSubCategoryList(categoryId);
+          const response = await categoryService.getSubCategoryByCategoryId(
+            categoryId
+          );
           if (response.success && response.data) {
             setSubCategories(response.data);
           } else {
