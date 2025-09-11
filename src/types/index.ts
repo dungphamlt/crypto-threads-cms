@@ -47,8 +47,14 @@ export interface Post {
 export interface PostDetail {
   _id: string;
   id: string; // API trả về cả _id và id
-  category: string;
-  subCategory?: string;
+  category: {
+    id: string;
+    key: string;
+  };
+  subCategory?: {
+    id: string;
+    key: string;
+  };
   title: string;
   content: string;
   metaDescription: string;

@@ -38,6 +38,7 @@ import { POST_STATUS, type SubCategory } from "@/types";
 import { toast } from "react-hot-toast";
 import PostViewDetail from "@/components/post/post-view-detail";
 import PostFormModal from "@/components/post/post-create";
+import { getSafeImageUrl } from "@/utils/imageUtils";
 
 function PostTableLayout() {
   const actionRef = useRef<ActionType>(null);
@@ -232,10 +233,19 @@ function PostTableLayout() {
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setFilters((prev) => {
+      const newFilters = {
+        ...prev,
+        [key]: value,
+      };
+
+      // Clear subcategory when category changes
+      if (key === "category") {
+        newFilters.subCategory = "";
+      }
+
+      return newFilters;
+    });
   };
 
   // Clear all filters
@@ -256,7 +266,7 @@ function PostTableLayout() {
   // Apply filters
   const applyFilters = () => {
     actionRef.current?.reload();
-    toast.success("Search applied");
+    // toast.success("Search applied");
   };
 
   // Handle Enter key press
@@ -337,7 +347,7 @@ function PostTableLayout() {
           <Image
             width={60}
             height={45}
-            src={record.coverUrl || "/placeholder.svg"}
+            src={getSafeImageUrl(record.coverUrl, "small")}
             alt={record.title}
             className="rounded-lg object-cover shadow-sm"
             placeholder={
@@ -711,16 +721,24 @@ function PostTableLayout() {
                   onChange={(e) =>
                     handleFilterChange("subCategory", e.target.value)
                   }
-                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                  disabled={!filters.category}
+                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white disabled:opacity-50"
                 >
-                  <option value="">Select sub-category</option>
-                  <option value="bitcoin">Bitcoin</option>
-                  <option value="ethereum">Ethereum</option>
-                  <option value="defi">DeFi</option>
-                  <option value="nft">NFT</option>
-                  <option value="trading">Trading</option>
-                  <option value="mining">Mining</option>
-                  <option value="security">Security</option>
+                  <option value="">
+                    {!filters.category
+                      ? "Select category first"
+                      : "Select sub-category"}
+                  </option>
+                  {subCategories.map((subcat: SubCategory) => {
+                    if (subcat.categoryId?.id !== filters.category) {
+                      return null;
+                    }
+                    return (
+                      <option key={subcat.id} value={subcat.id}>
+                        {subcat.key}
+                      </option>
+                    );
+                  })}
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg

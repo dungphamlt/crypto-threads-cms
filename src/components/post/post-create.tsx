@@ -83,8 +83,8 @@ export default function PostFormModal({
     setPost({
       title: postData.title,
       content: postData.content,
-      category: postData.category,
-      subCategory: postData.subCategory || "",
+      category: postData.category.id || "",
+      subCategory: postData.subCategory?.id || "",
       tags: postData.tags || [],
       metaDescription: postData.metaDescription,
       excerpt: postData.excerpt,

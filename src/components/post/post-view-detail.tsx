@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { PostDetail, Category } from "@/types";
+import type { PostDetail } from "@/types";
 import { postService } from "@/services/postService";
-import { categoryService } from "@/services/categoryService";
-import { useQuery } from "@tanstack/react-query";
 import {
   X,
   Calendar,
@@ -17,6 +15,7 @@ import {
   Maximize,
 } from "lucide-react";
 import Image from "next/image";
+import { getSafeImageUrl } from "@/utils/imageUtils";
 
 interface PostDetailModalProps {
   postId: string | null;
@@ -36,21 +35,6 @@ PostDetailModalProps) {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullScreen] = useState(false);
-
-  // Load category data
-  const { data: categoriesResponse } = useQuery({
-    queryKey: ["categories"],
-    queryFn: () => categoryService.getCategoryList(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  const categories = categoriesResponse?.success
-    ? categoriesResponse.data || []
-    : [];
-  const categoryData = categories.find(
-    (cat: Category) => cat.id === post?.category
-  );
-  const categoryName = categoryData?.key || post?.category || "Unknown";
 
   useEffect(() => {
     const loadDetail = async () => {
@@ -267,7 +251,7 @@ PostDetailModalProps) {
                       className="aspect-video w-full overflow-hidden"
                     >
                       <Image
-                        src={post.coverUrl || "/placeholder.svg"}
+                        src={getSafeImageUrl(post.coverUrl, "large")}
                         alt={post.title}
                         width={800}
                         height={450}
@@ -327,7 +311,7 @@ PostDetailModalProps) {
                       {post.category && (
                         <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
                           <Tag className="w-4 h-4 text-purple-500" />
-                          <span>{categoryName}</span>
+                          <span>{post.category.key}</span>
                         </div>
                       )}
 
