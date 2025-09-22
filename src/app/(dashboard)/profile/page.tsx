@@ -6,14 +6,33 @@ import { Admin, adminService, Author } from "@/services/adminService";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import TelegramIcon from "@/assets/icon/telegram.svg";
+import XIcon from "@/assets/icon/x.svg";
+import FacebookIcon from "@/assets/icon/facebook.svg";
+import InstagramIcon from "@/assets/icon/instagram.svg";
 
 const SOCIAL_TYPE_OPTIONS = [
-  { value: "telegram", label: "Telegram" },
-  { value: "x", label: "X (Twitter)" },
-  { value: "youtube", label: "YouTube" },
-  { value: "facebook", label: "Facebook" },
-  { value: "instagram", label: "Instagram" },
-  { value: "other", label: "Other" },
+  {
+    value: "telegram",
+    label: "Telegram",
+    icon: <Image src={TelegramIcon} alt="Telegram" width={40} height={40} />,
+  },
+  {
+    value: "x",
+    label: "X (Twitter)",
+    icon: <Image src={XIcon} alt="X" width={40} height={40} />,
+  },
+  {
+    value: "facebook",
+    label: "Facebook",
+    icon: <Image src={FacebookIcon} alt="Facebook" width={40} height={40} />,
+  },
+  {
+    value: "instagram",
+    label: "Instagram",
+    icon: <Image src={InstagramIcon} alt="Instagram" width={40} height={40} />,
+  },
+  { value: "other", label: "Other", icon: <Link2 className="w-4 h-4" /> },
 ];
 
 export default function ProfilePage() {
@@ -43,6 +62,7 @@ export default function ProfilePage() {
   const handleEdit = () => {
     setEditedProfile({
       username: profile?.username || "",
+      penName: profile?.penName || "",
       email: profile?.email || "",
       avatarUrl: profile?.avatarUrl || "",
       description: profile?.description || "",
@@ -125,8 +145,26 @@ export default function ProfilePage() {
 
   // Social management functions
   const addSocial = () => {
-    const newKey = "website"; // Default to website
-    setSocials({ ...socials, [newKey]: "" });
+    // Find an available platform that's not already used
+    const availablePlatform = SOCIAL_TYPE_OPTIONS.find(
+      (option) => !socials.hasOwnProperty(option.value)
+    );
+
+    if (availablePlatform) {
+      setSocials({ ...socials, [availablePlatform.value]: "" });
+    } else {
+      // If all platforms are used, add a numbered version
+      const baseKey = SOCIAL_TYPE_OPTIONS[0].value;
+      let counter = 1;
+      let newKey = `${baseKey}_${counter}`;
+
+      while (socials.hasOwnProperty(newKey)) {
+        counter++;
+        newKey = `${baseKey}_${counter}`;
+      }
+
+      setSocials({ ...socials, [newKey]: "" });
+    }
   };
 
   const removeSocial = (key: string) => {
@@ -221,6 +259,11 @@ export default function ProfilePage() {
   };
 
   const displayName = profile?.username || profile?.email;
+
+  const getSocialIcon = (platform: string) => {
+    const option = SOCIAL_TYPE_OPTIONS.find((opt) => opt.value === platform);
+    return option?.icon || <Link2 className="w-4 h-4" />;
+  };
 
   if (isLoading) {
     return (
@@ -409,6 +452,8 @@ export default function ProfilePage() {
                 <Image
                   src={editedProfile.avatarUrl}
                   alt="Avatar preview"
+                  width={100}
+                  height={100}
                   className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
@@ -506,9 +551,9 @@ export default function ProfilePage() {
                           href={value}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors p-2 rounded-lg hover:bg-blue-50"
                         >
-                          <Link2 className="h-4 w-4 mr-2" />
+                          {getSocialIcon(key)}
                           <span className="font-medium">{key}:</span>
                           <span className="ml-1">{value}</span>
                         </a>
@@ -517,21 +562,21 @@ export default function ProfilePage() {
                   )
                 ) : (
                   // Handle object format
-                  Object.entries(profile.socials as Record<string, string>).map(
-                    ([key, value]) => (
+                  <div className="flex items-center gap-4">
+                    {Object.entries(
+                      profile.socials as Record<string, string>
+                    ).map(([key, value]) => (
                       <a
                         key={key}
                         href={value}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors p-2 rounded-lg hover:bg-blue-50"
                       >
-                        <Link2 className="h-4 w-4 mr-2" />
-                        <span className="font-medium">{key}:</span>
-                        <span className="ml-1">{value}</span>
+                        {getSocialIcon(key)}
                       </a>
-                    )
-                  )
+                    ))}
+                  </div>
                 )
               ) : (
                 <p className="text-gray-500 text-sm">
