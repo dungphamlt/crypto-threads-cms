@@ -6,6 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 // Tạo instance Axios cho client-side
 const axiosClient = axios.create({
   baseURL: API_URL,
+  timeout: 10000, // 10 seconds timeout
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -36,7 +37,8 @@ axiosClient.interceptors.response.use(
           currentPath !== "/login"
             ? `/login?redirect=${encodeURIComponent(currentPath)}`
             : "/login";
-        window.location.href = redirectUrl;
+        // Use replace instead of href for immediate navigation
+        window.location.replace(redirectUrl);
       }
     }
     return Promise.reject(error);
@@ -55,21 +57,7 @@ const handleResponse = <T>(response: AxiosResponse): ApiResponse<T> => {
 
 // Hàm xử lý lỗi chung
 const handleError = <T>(error: AxiosError): ApiResponse<T> => {
-  if (error.response?.status === 401) {
-    // Xử lý khi token hết hạn hoặc không hợp lệ
-    Cookies.remove("token");
-
-    // Redirect về trang login nếu đang ở client-side
-    if (typeof window !== "undefined") {
-      const currentPath = window.location.pathname;
-      const redirectUrl =
-        currentPath !== "/login"
-          ? `/login?redirect=${encodeURIComponent(currentPath)}`
-          : "/login";
-      window.location.href = redirectUrl;
-    }
-  }
-
+  // 401 errors are already handled by interceptor, no need to duplicate
   return {
     success: false,
     error:

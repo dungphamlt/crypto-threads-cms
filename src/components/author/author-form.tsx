@@ -1,34 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  adminService,
-  Admin,
-  NewAdmin,
-  AdminRole,
-} from "@/services/adminService";
-import { X, PenTool, User, UserPlus } from "lucide-react";
+import { adminService, Author, AdminRole } from "@/services/adminService";
+import { X, PenTool, UserPlus, Plus, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { Image } from "antd";
+import Image from "next/image";
 
-interface FormAddNewAdminProps {
+interface FormAddNewAuthorProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: (newAdmin: Admin) => void;
+  onSuccess: (author: Author) => void;
   onError?: () => void;
 }
 
-const FormAddNewAdmin = ({
+interface SocialEntry {
+  key: string;
+  value: string;
+}
+
+const SOCIAL_TYPE_OPTIONS = [
+  { value: "telegram", label: "Telegram" },
+  { value: "x", label: "X (Twitter)" },
+  { value: "youtube", label: "YouTube" },
+  { value: "facebook", label: "Facebook" },
+  { value: "instagram", label: "Instagram" },
+  { value: "other", label: "Other" },
+];
+
+const FormAddNewAuthor = ({
   open,
   onClose,
   onSuccess,
   onError,
-}: FormAddNewAdminProps) => {
-  const [newAdmin, setNewAdmin] = useState<NewAdmin>({
+}: FormAddNewAuthorProps) => {
+  const [author, setAuthor] = useState<Author>({
     email: "",
     username: "",
     password: "",
     penName: "",
-    socials: [],
+    socials: {},
     avatarUrl: "",
     description: "",
     designations: [],
@@ -37,41 +46,58 @@ const FormAddNewAdmin = ({
   const [loading, setLoading] = useState(false);
 
   // Local state for input fields
-  const [socialInput, setSocialInput] = useState("");
+  const [socials, setSocials] = useState<SocialEntry[]>([
+    { key: "telegram", value: "" },
+  ]);
   const [designationInput, setDesignationInput] = useState("");
+
+  // Reset form when opening
+  useEffect(() => {
+    if (open) {
+      setAuthor({
+        email: "",
+        username: "",
+        password: "",
+        penName: "",
+        socials: {},
+        avatarUrl: "",
+        description: "",
+        designations: [],
+        role: AdminRole.WRITER,
+      });
+      setSocials([{ key: "telegram", value: "" }]);
+      setDesignationInput("");
+    }
+  }, [open]);
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    setNewAdmin((f) => ({ ...f, [e.target.name]: e.target.value }));
+    setAuthor((f: Author) => ({ ...f, [e.target.name]: e.target.value }));
   };
 
-  // Handle adding social links
+  // Handle social links management
   const addSocial = () => {
-    const trimmedSocial = socialInput.trim();
-    if (trimmedSocial && !newAdmin.socials.includes(trimmedSocial)) {
-      setNewAdmin((prev) => ({
-        ...prev,
-        socials: [...prev.socials, trimmedSocial],
-      }));
-      setSocialInput("");
+    setSocials([...socials, { key: "telegram", value: "" }]);
+  };
+
+  const removeSocial = (index: number) => {
+    if (socials.length > 1) {
+      setSocials(socials.filter((_, i) => i !== index));
     }
   };
 
-  const removeSocial = (socialToRemove: string) => {
-    setNewAdmin((prev) => ({
-      ...prev,
-      socials: prev.socials.filter((social) => social !== socialToRemove),
-    }));
-  };
-
-  const handleSocialKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addSocial();
-    }
+  const updateSocial = (
+    index: number,
+    field: "key" | "value",
+    newValue: string
+  ) => {
+    const updated = socials.map((item, i) =>
+      i === index ? { ...item, [field]: newValue } : item
+    );
+    setSocials(updated);
   };
 
   // Handle adding designations
@@ -79,9 +105,9 @@ const FormAddNewAdmin = ({
     const trimmedDesignation = designationInput.trim();
     if (
       trimmedDesignation &&
-      !newAdmin.designations.includes(trimmedDesignation)
+      !author.designations.includes(trimmedDesignation)
     ) {
-      setNewAdmin((prev) => ({
+      setAuthor((prev) => ({
         ...prev,
         designations: [...prev.designations, trimmedDesignation],
       }));
@@ -90,7 +116,7 @@ const FormAddNewAdmin = ({
   };
 
   const removeDesignation = (designationToRemove: string) => {
-    setNewAdmin((prev) => ({
+    setAuthor((prev) => ({
       ...prev,
       designations: prev.designations.filter(
         (designation) => designation !== designationToRemove
@@ -110,30 +136,35 @@ const FormAddNewAdmin = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      const res = await adminService.createAdmin(newAdmin);
+      // Convert socials array to object format
+      const socialsObject = socials.reduce((acc, { key, value }) => {
+        if (key && value.trim()) {
+          acc[key] = value.trim();
+        }
+        return acc;
+      }, {} as Record<string, string>);
+
+      const submitData = {
+        ...author,
+        socials: socialsObject,
+      };
+
+      // Create new author
+      const res = await adminService.createAuthor(submitData);
       if (res.success) {
-        toast.success("New creator added successfully!");
-        setNewAdmin({
-          email: "",
-          username: "",
-          password: "",
-          penName: "",
-          socials: [],
-          avatarUrl: "",
-          description: "",
-          designations: [],
-          role: AdminRole.WRITER,
-        });
-        setSocialInput("");
-        setDesignationInput("");
-        onSuccess(res.data as unknown as Admin);
+        toast.success("New author added successfully!");
       } else {
-        toast.error(res.message || "Failed to create new creator");
+        toast.error(res.message || "Failed to create new author");
+      }
+
+      if (res.success) {
+        onSuccess(res.data as unknown as Author);
       }
     } catch (err) {
-      console.error("Error creating new creator:", err);
-      toast.error("An error occurred while creating the creator");
+      console.error("Error creating author:", err);
+      toast.error("An error occurred while creating the author");
       if (onError) onError();
     } finally {
       setLoading(false);
@@ -183,7 +214,7 @@ const FormAddNewAdmin = ({
               </motion.div>
               <h2 className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
                 <UserPlus className="w-6 h-6 text-purple-500" />
-                Add New Admin
+                Add New Author
               </h2>
             </div>
 
@@ -199,7 +230,7 @@ const FormAddNewAdmin = ({
                     placeholder="Enter email address"
                     type="email"
                     name="email"
-                    value={newAdmin.email}
+                    value={author.email}
                     onChange={handleChange}
                     required
                     autoComplete="email"
@@ -214,7 +245,7 @@ const FormAddNewAdmin = ({
                     className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm"
                     placeholder="Enter username"
                     name="username"
-                    value={newAdmin.username}
+                    value={author.username}
                     onChange={handleChange}
                     required
                     autoComplete="username"
@@ -222,37 +253,18 @@ const FormAddNewAdmin = ({
                 </div>
               </div>
 
-              {/* Pen Name & Password Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center">
-                    Pen Name
-                  </label>
-                  <input
-                    className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm"
-                    placeholder="Professional writing name"
-                    name="penName"
-                    value={newAdmin.penName}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center">
-                    Password *
-                  </label>
-                  <input
-                    className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm"
-                    placeholder="Enter secure password"
-                    type="password"
-                    name="password"
-                    value={newAdmin.password}
-                    onChange={handleChange}
-                    required
-                    autoComplete="new-password"
-                    minLength={6}
-                  />
-                </div>
+              {/* Pen Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center">
+                  Pen Name
+                </label>
+                <input
+                  className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm"
+                  placeholder="Professional writing name"
+                  name="penName"
+                  value={author.penName}
+                  onChange={handleChange}
+                />
               </div>
 
               {/* Avatar URL */}
@@ -265,14 +277,14 @@ const FormAddNewAdmin = ({
                   placeholder="https://example.com/avatar.jpg"
                   type="url"
                   name="avatarUrl"
-                  value={newAdmin.avatarUrl}
+                  value={author.avatarUrl}
                   onChange={handleChange}
                 />
 
-                {newAdmin.avatarUrl && (
+                {author.avatarUrl && (
                   <div className="mt-2 flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <Image
-                      src={newAdmin.avatarUrl}
+                      src={author.avatarUrl}
                       alt="Avatar preview"
                       width={48}
                       height={48}
@@ -295,64 +307,82 @@ const FormAddNewAdmin = ({
                 </label>
                 <textarea
                   className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm resize-none"
-                  placeholder="Tell us about this creator..."
+                  placeholder="Tell us about this author..."
                   name="description"
                   rows={3}
-                  value={newAdmin.description}
+                  value={author.description}
                   onChange={handleChange}
                   maxLength={500}
                 />
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Professional background and expertise</span>
-                  <span>{newAdmin.description.length}/500</span>
+                  <span>{author.description.length}/500</span>
                 </div>
               </div>
 
-              {/* Social Links */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  Social Links
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={socialInput}
-                    onChange={(e) => setSocialInput(e.target.value)}
-                    onKeyDown={handleSocialKeyDown}
-                    placeholder="https://twitter.com/username"
-                    className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
-                  />
+              {/* Social Links Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
+                    Social Links
+                  </label>
                   <button
                     type="button"
                     onClick={addSocial}
-                    disabled={!socialInput.trim()}
-                    className="px-4 py-3 text-sm bg-purple-500 text-white rounded-xl hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium"
                   >
-                    Add
+                    <Plus className="w-4 h-4" />
+                    Add Social
                   </button>
                 </div>
 
-                {newAdmin.socials.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {newAdmin.socials.map((social, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-purple-50 text-purple-700 rounded-full border border-purple-200"
-                      >
-                        {social.length > 30
-                          ? `${social.substring(0, 30)}...`
-                          : social}
+                <div className="space-y-3">
+                  {socials.map((socialEntry, index) => (
+                    <div
+                      key={index}
+                      className="flex gap-3 items-start p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div className="w-1/3">
+                        <select
+                          value={socialEntry.key}
+                          onChange={(e) =>
+                            updateSocial(index, "key", e.target.value)
+                          }
+                          className="w-full px-4 py-3 rounded-lg text-black border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 outline-none bg-white"
+                        >
+                          {SOCIAL_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex-1">
+                        <input
+                          type="url"
+                          placeholder="Enter URL..."
+                          value={socialEntry.value}
+                          onChange={(e) =>
+                            updateSocial(index, "value", e.target.value)
+                          }
+                          className="w-full px-4 py-3 rounded-lg text-black border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 outline-none placeholder:text-gray-400"
+                        />
+                      </div>
+
+                      {socials.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => removeSocial(social)}
-                          className="hover:text-red-500 font-bold"
+                          onClick={() => removeSocial(index)}
+                          className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Remove Social"
                         >
-                          ×
+                          <Trash2 className="w-4 h-4" />
                         </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Designations */}
@@ -379,9 +409,9 @@ const FormAddNewAdmin = ({
                   </button>
                 </div>
 
-                {newAdmin.designations.length > 0 && (
+                {author.designations.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {newAdmin.designations.map((designation, index) => (
+                    {author.designations.map((designation, index) => (
                       <span
                         key={index}
                         className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200"
@@ -400,23 +430,6 @@ const FormAddNewAdmin = ({
                 )}
               </div>
 
-              {/* Role */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  <User className="w-4 h-4 mr-2 text-gray-500" />
-                  Role
-                </label>
-                <select
-                  className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm appearance-none"
-                  name="role"
-                  value={newAdmin.role}
-                  onChange={handleChange}
-                >
-                  <option value="admin">Admin</option>
-                  <option value="writer">Writer</option>
-                </select>
-              </div>
-
               {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
                 <button
@@ -432,9 +445,9 @@ const FormAddNewAdmin = ({
                   className="px-6 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={
                     loading ||
-                    !newAdmin.username ||
-                    !newAdmin.email ||
-                    !newAdmin.password
+                    !author.username ||
+                    !author.email ||
+                    !author.penName
                   }
                 >
                   {loading ? (
@@ -464,7 +477,7 @@ const FormAddNewAdmin = ({
                   ) : (
                     <span className="flex items-center">
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Create Creator
+                      Create Author
                     </span>
                   )}
                 </button>
@@ -477,4 +490,4 @@ const FormAddNewAdmin = ({
   );
 };
 
-export default FormAddNewAdmin;
+export default FormAddNewAuthor;

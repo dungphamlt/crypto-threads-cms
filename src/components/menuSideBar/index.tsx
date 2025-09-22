@@ -3,19 +3,16 @@
 import {
   HomeIcon,
   UsersIcon,
-  ShieldCheckIcon,
-  TextSearch,
   X,
   SquareMenu,
   ClipboardList,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { Admin, AdminRole, adminService } from "@/services/adminService";
 
 interface MenuSideBarProps {
   collapsed?: boolean;
@@ -27,128 +24,65 @@ interface MenuItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  sub?: {
-    name: string;
-    href: string;
-    sub?: { name: string; href: string }[];
-  }[];
 }
 
 function MenuSideBar({ collapsed = false, onCloseMobile }: MenuSideBarProps) {
   const router = useRouter();
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const { data: profileData } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => adminService.getProfile(),
+  });
+  const profile = profileData?.data as Admin;
 
   const menuItems: MenuItem[] = [
-    { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
-    { name: "Author", href: "/authors", icon: UsersIcon },
-    { name: "Admin", href: "/admin", icon: ShieldCheckIcon },
+    // { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
     { name: "Posts", href: "/posts", icon: ClipboardList },
     {
       name: "Categories",
       href: "/categories",
       icon: SquareMenu,
     },
-    { name: "CMS Logs", href: "/logs", icon: TextSearch },
+    ...(profile?.role === AdminRole.ADMIN
+      ? [{ name: "Author", href: "/authors", icon: UsersIcon }]
+      : [{ name: "My Profile", href: "/profile", icon: UsersIcon }]),
+    // { name: "CMS Logs", href: "/logs", icon: TextSearch },
   ];
 
   const pathname = usePathname();
 
-  const toggleSubmenu = (menuName: string) => {
-    if (collapsed) return;
-
-    setExpandedMenus((prev) =>
-      prev.includes(menuName)
-        ? prev.filter((name) => name !== menuName)
-        : [...prev, menuName]
-    );
-  };
-
-  const isMenuExpanded = (menuName: string) => expandedMenus.includes(menuName);
-
   const isActive = (href: string) => pathname === href;
 
-  const isParentActive = (item: MenuItem) => {
-    if (pathname === item.href) return true;
-    if (item.sub) {
-      return item.sub.some((subItem) => {
-        if (pathname === subItem.href) return true;
-        if (subItem.sub) {
-          return subItem.sub.some((subSubItem) => pathname === subSubItem.href);
-        }
-        return false;
-      });
-    }
-    return false;
-  };
-
-  const renderMenuItem = (item: MenuItem, level = 0) => {
+  const renderMenuItem = (item: MenuItem) => {
     const Icon = item.icon;
-    const hasSubmenu = item.sub && item.sub.length > 0;
-    const isExpanded = isMenuExpanded(item.name);
-    const parentActive = isParentActive(item);
     const active = isActive(item.href);
 
     return (
       <li key={item.name}>
-        <div
-          className={`group relative flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer ${
+        <Link
+          href={item.href}
+          className={`group relative flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
             collapsed ? "justify-center" : "justify-start"
           } ${
-            active || parentActive
+            active
               ? "bg-thirdary text-primary shadow-sm border-r-4 border-secondary"
-              : "text-primary  hover:bg-thirdary/70 hover:shadow-sm"
+              : "text-primary hover:bg-thirdary/70 hover:shadow-sm"
           }`}
-          onClick={() => (hasSubmenu ? toggleSubmenu(item.name) : null)}
           title={collapsed ? item.name : undefined}
-          style={{
-            paddingLeft: collapsed ? undefined : `${16 + level * 20}px`,
-          }}
         >
-          {level === 0 && Icon && (
-            <div className={`flex-shrink-0 ${collapsed ? "" : "mr-3"}`}>
-              <Icon
-                className={`h-5 w-5 transition-all duration-200 ${
-                  active || parentActive
-                    ? "text-primary scale-110"
-                    : "text-primary/70 group-hover:text-primary group-hover:scale-105"
-                }`}
-              />
-            </div>
-          )}
+          <div className={`flex-shrink-0 ${collapsed ? "" : "mr-3"}`}>
+            <Icon
+              className={`h-5 w-5 transition-all duration-200 ${
+                active
+                  ? "text-primary scale-110"
+                  : "text-primary/70 group-hover:text-primary group-hover:scale-105"
+              }`}
+            />
+          </div>
 
           {!collapsed && (
             <>
-              <Link
-                href={item.href}
-                className="flex-1 truncate font-medium"
-                onClick={(e) => {
-                  if (hasSubmenu) {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                {item.name}
-              </Link>
-
-              {hasSubmenu && (
-                <div className="ml-auto flex items-center">
-                  <div
-                    className={`p-1 rounded-md transition-all duration-200 ${
-                      isExpanded
-                        ? "bg-secondary/20 rotate-0"
-                        : "hover:bg-secondary/10"
-                    }`}
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-primary/60" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-primary/60" />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {(active || parentActive) && !hasSubmenu && (
+              <span className="flex-1 truncate font-medium">{item.name}</span>
+              {active && (
                 <div className="ml-auto">
                   <div className="h-2 w-2 rounded-full bg-secondary animate-pulse" />
                 </div>
@@ -161,91 +95,7 @@ function MenuSideBar({ collapsed = false, onCloseMobile }: MenuSideBarProps) {
               {item.name}
             </div>
           )}
-        </div>
-
-        {hasSubmenu && !collapsed && isExpanded && (
-          <ul className="mt-1 space-y-0.5 animate-in slide-in-from-top-2 duration-200">
-            {item.sub!.map((subItem) => (
-              <li key={subItem.name}>
-                <div
-                  className={`group flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 cursor-pointer ${
-                    isActive(subItem.href)
-                      ? "bg-thirdary/70 text-primary shadow-sm"
-                      : "text-primary hover:bg-thirdary/70"
-                  }`}
-                  onClick={() =>
-                    subItem.sub ? toggleSubmenu(subItem.name) : null
-                  }
-                  style={{ paddingLeft: `${16 + (level + 1) * 20}px` }}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary/30 mr-3 flex-shrink-0" />
-
-                  <Link
-                    href={subItem.href}
-                    className="flex-1 truncate"
-                    onClick={(e) => {
-                      if (subItem.sub) {
-                        e.preventDefault();
-                      }
-                    }}
-                  >
-                    {subItem.name}
-                  </Link>
-
-                  {subItem.sub && (
-                    <div className="ml-2">
-                      <div
-                        className={`p-0.5 rounded transition-all duration-200 ${
-                          isMenuExpanded(subItem.name)
-                            ? "bg-secondary/20"
-                            : "hover:bg-secondary/10"
-                        }`}
-                      >
-                        {isMenuExpanded(subItem.name) ? (
-                          <ChevronDown className="h-3.5 w-3.5 text-primary/50" />
-                        ) : (
-                          <ChevronRight className="h-3.5 w-3.5 text-primary/50" />
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {isActive(subItem.href) && !subItem.sub && (
-                    <div className="ml-auto">
-                      <div className="h-1.5 w-1.5 rounded-full bg-secondary" />
-                    </div>
-                  )}
-                </div>
-
-                {subItem.sub && isMenuExpanded(subItem.name) && (
-                  <ul className="mt-1 space-y-0.5 animate-in slide-in-from-top-1 duration-150">
-                    {subItem.sub.map((subSubItem) => (
-                      <li key={subSubItem.name}>
-                        <Link
-                          href={subSubItem.href}
-                          className={`group flex items-center rounded-lg px-3 py-1.5 text-sm transition-all duration-200 ${
-                            isActive(subSubItem.href)
-                              ? "bg-thirdary/60 text-primary font-medium"
-                              : "text-primary hover:bg-thirdary/60"
-                          }`}
-                          style={{ paddingLeft: `${16 + (level + 2) * 20}px` }}
-                        >
-                          <div className="w-1 h-1 rounded-full bg-primary/20 mr-3 flex-shrink-0" />
-                          <span className="truncate">{subSubItem.name}</span>
-                          {isActive(subSubItem.href) && (
-                            <div className="ml-auto">
-                              <div className="h-1.5 w-1.5 rounded-full bg-secondary" />
-                            </div>
-                          )}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+        </Link>
       </li>
     );
   };

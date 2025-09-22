@@ -1,11 +1,11 @@
-import { get, post, put } from "./api";
+import { get, post, patch } from "./api";
 
 export enum AdminRole {
   ADMIN = "admin",
   WRITER = "writer",
 }
 
-export enum AdminStatus {
+export enum AuthorStatus {
   ACTIVE = "ACTIVE",
   INACTIVE = "INACTIVE",
 }
@@ -16,20 +16,19 @@ export interface Admin {
   username: string;
   password: string;
   penName: string;
-  socials: string[];
+  socials: Record<string, string>;
   avatarUrl: string;
   description: string;
   designations: string[];
   role: AdminRole;
-  // status: AdminStatus,
 }
 
-export interface NewAdmin {
+export interface Author {
   email: string;
   username: string;
   password: string;
   penName: string;
-  socials: string[];
+  socials: Record<string, string>;
   avatarUrl: string;
   description: string;
   designations: string[];
@@ -37,23 +36,31 @@ export interface NewAdmin {
 }
 
 export const adminService = {
-  createAdmin: (admin: NewAdmin) => {
-    return post<NewAdmin>("/admin-aggregate/create-admin", admin);
+  getProfile: () => {
+    return get<Author>("/admin-aggregate/profile");
   },
 
-  getAdminList: () => {
-    return get<Admin[]>("/admin");
+  createAuthor: (author: Author) => {
+    return post<Author>("/admin-aggregate/create-admin", author);
+  },
+
+  getAuthorList: () => {
+    return get<Author[]>("admin-aggregate/admins");
   },
 
   getAdminDetail: (id: number) => {
     return get<Admin>(`/admin-aggregate/admins/${id}`);
   },
 
-  updateAdminRole: (id: number, adminRole: AdminRole) => {
-    return put<Admin>(`/admin/${id}/role`, { id, adminRole });
+  updateAuthor: (author: Author) => {
+    return patch<Author>(`/admin-aggregate/profile`, author);
   },
-  updateAdminStatus: (id: number, status: AdminStatus) => {
-    return put<Admin>(`/admin/${id}/status`, { id, status });
+
+  updatePassword: (passwordData: {
+    currentPassword: string;
+    newPassword: string;
+  }) => {
+    return patch<void>("/admin-aggregate/password", passwordData);
   },
 
   getCmsLogs: async (page: number = 1, pageSize: number = 10) => {

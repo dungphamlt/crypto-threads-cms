@@ -81,8 +81,8 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
-          <div className="mx-auto max-w-7xl">{children}</div>
+        <main className="flex-1 overflow-y-auto overscroll-contain p-6 lg:p-8">
+          {children}
         </main>
       </div>
     </div>

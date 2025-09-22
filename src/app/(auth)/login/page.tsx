@@ -3,7 +3,6 @@
 import type React from "react";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { authService } from "@/services/authService";
 import Cookies from "js-cookie";
 import { Loader2, Lock, User } from "lucide-react";
@@ -15,7 +14,6 @@ interface LoginResponse {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -48,7 +46,10 @@ export default function LoginPage() {
         Cookies.set("token", access_token, {
           expires: 3 / 24,
         });
-        router.push("/posts");
+
+        // Use window.location.replace for immediate navigation
+        window.location.replace("/posts");
+        return; // Exit early to prevent setIsLoading(false)
       } else {
         setError(
           response.message || "Invalid username or password. Please try again."

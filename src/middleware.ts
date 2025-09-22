@@ -3,35 +3,33 @@ import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token = req.cookies.get("token")?.value;
 
-  const isAuthRoute =
-    pathname === "/login" ||
-    pathname.startsWith("/(auth)/login") ||
-    pathname.startsWith("/(auth)/register") ||
-    pathname.startsWith("/(auth)/verify-email");
-
-  const isPublicRoute =
+  // Early return for public routes to minimize processing
+  if (
     pathname === "/" ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
-    pathname.startsWith("/favicon.ico");
-
-  // Cho phép truy cập các route public và auth
-  if (isPublicRoute || isAuthRoute) {
+    pathname.startsWith("/favicon.ico") ||
+    pathname.startsWith("/static/")
+  ) {
     return NextResponse.next();
   }
 
-  // Chưa có token: redirect về /login
+  // Early return for auth routes
+  if (pathname === "/login" || pathname.startsWith("/(auth)/")) {
+    return NextResponse.next();
+  }
+
+  // Check token only for protected routes
+  const token = req.cookies.get("token")?.value;
+
   if (!token) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirect", pathname);
-    console.log("No token found, redirecting to login:", url.toString());
     return NextResponse.redirect(url);
   }
 
-  // Đã có token: cho phép truy cập
   return NextResponse.next();
 }
 

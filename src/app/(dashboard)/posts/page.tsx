@@ -88,7 +88,7 @@ function PostsManagement() {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-lg shadow-sm">
+      <div className="bg-transparent rounded-lg">
         {viewMode === "table" ? (
           <PostTableLayout key={`table-${refreshKey}`} />
         ) : (

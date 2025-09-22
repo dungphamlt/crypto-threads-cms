@@ -654,7 +654,7 @@ function PostTableLayout() {
       filters.endDate;
 
     return (
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 m-6 mb-4">
+      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 mb-4">
         <div className="px-6 py-4">
           {/* Filter Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -962,24 +962,8 @@ function PostTableLayout() {
   };
 
   return (
-    <ConfigProvider
-      locale={enUS}
-      theme={{
-        token: {
-          colorPrimary: "#1f4172",
-          borderRadius: 8,
-          colorBgContainer: "#ffffff",
-        },
-        components: {
-          Table: {
-            headerBg: "#fafafa",
-            headerColor: "#262626",
-            rowHoverBg: "#f5f5f5",
-          },
-        },
-      }}
-    >
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <ConfigProvider locale={enUS}>
+      <div className="bg-transparent overflow-hidden">
         {renderFilterSection()}
 
         <ProTable<PostDetail>

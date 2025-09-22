@@ -182,115 +182,110 @@ function CategoriesManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Categories Management
-            </h1>
-            <p className="text-gray-600">
-              Organize and manage your content categories
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleCreateCategory}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Plus className="h-4 w-4" />
-              Create Category
-            </button>
-          </div>
+    <div className="container mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row items-start sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Categories Management
+          </h1>
+          <p className="text-gray-600">
+            Organize and manage your content categories
+          </p>
         </div>
-
-        {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 ">
-          <div className="p-6">
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="flex flex-col items-center gap-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                  <p className="text-gray-600">Loading categories...</p>
-                </div>
-              </div>
-            ) : categories.length === 0 ? (
-              <div className="flex justify-center items-center h-64">
-                <Empty
-                  description="No categories available"
-                  className="py-16"
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categories.map((category) => (
-                  <CategoryCard
-                    key={category.id}
-                    category={category}
-                    onView={handleViewCategory}
-                    onEdit={handleEditCategory}
-                    onDelete={handleDeleteCategory}
-                    onAddSubCategory={handleAddSubCategory}
-                    onViewSubCategory={handleViewSubCategory}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleCreateCategory}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg"
+          >
+            <Plus className="h-4 w-4" />
+            Create Category
+          </button>
         </div>
-
-        {/* Create and Edit Category Modal */}
-        <CategoryForm
-          isOpen={isCategoryModalOpen}
-          onClose={() => {
-            setIsCategoryModalOpen(false);
-            setEditingCategory(null);
-          }}
-          onSuccess={handleCategorySuccess}
-          categoryId={editingCategory?.id}
-          initialData={editingCategory || undefined}
-        />
-
-        {/* Create and Edit Sub Category Modal */}
-        <SubCategoryForm
-          isOpen={isSubCategoryModalOpen}
-          onClose={() => {
-            setIsSubCategoryModalOpen(false);
-            setEditingSubCategory(null);
-            setCategoryIdSelected(null);
-          }}
-          onSuccess={handleSubCategorySuccess}
-          parentCategoryId={categoryIdSelected || ""}
-          subCategoryId={editingSubCategory?.id}
-          initialData={editingSubCategory || undefined}
-        />
-
-        {/* View Category Detail Modal */}
-        <CategoryViewDetail
-          categoryId={categoryIdSelected || ""}
-          isOpen={isViewDetailModalOpen}
-          onClose={() => {
-            setIsViewDetailModalOpen(false);
-            setCategoryIdSelected(null);
-          }}
-          onEdit={handleEditCategory}
-          onDelete={handleDeleteCategory}
-          onAddSubCategory={handleAddSubCategory}
-        />
-
-        {/* View Sub Category Detail Modal */}
-        <SubCategoryViewDetail
-          subCategoryId={subCategoryIdSelected || ""}
-          isOpen={isViewSubCategoryDetailModalOpen}
-          onClose={() => {
-            setIsViewSubCategoryDetailModalOpen(false);
-            setSubCategoryIdSelected(null);
-          }}
-          onEdit={handleEditSubCategory}
-          onDelete={handleDeleteSubCategory}
-        />
       </div>
+
+      {/* Main Content */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 ">
+        <div className="p-6">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <p className="text-gray-600">Loading categories...</p>
+              </div>
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="flex justify-center items-center h-64">
+              <Empty description="No categories available" className="py-16" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {categories.map((category) => (
+                <CategoryCard
+                  key={category.id}
+                  category={category}
+                  onView={handleViewCategory}
+                  onEdit={handleEditCategory}
+                  onDelete={handleDeleteCategory}
+                  onAddSubCategory={handleAddSubCategory}
+                  onViewSubCategory={handleViewSubCategory}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Create and Edit Category Modal */}
+      <CategoryForm
+        isOpen={isCategoryModalOpen}
+        onClose={() => {
+          setIsCategoryModalOpen(false);
+          setEditingCategory(null);
+        }}
+        onSuccess={handleCategorySuccess}
+        categoryId={editingCategory?.id}
+        initialData={editingCategory || undefined}
+      />
+
+      {/* Create and Edit Sub Category Modal */}
+      <SubCategoryForm
+        isOpen={isSubCategoryModalOpen}
+        onClose={() => {
+          setIsSubCategoryModalOpen(false);
+          setEditingSubCategory(null);
+          setCategoryIdSelected(null);
+        }}
+        onSuccess={handleSubCategorySuccess}
+        parentCategoryId={categoryIdSelected || ""}
+        subCategoryId={editingSubCategory?.id}
+        initialData={editingSubCategory || undefined}
+      />
+
+      {/* View Category Detail Modal */}
+      <CategoryViewDetail
+        categoryId={categoryIdSelected || ""}
+        isOpen={isViewDetailModalOpen}
+        onClose={() => {
+          setIsViewDetailModalOpen(false);
+          setCategoryIdSelected(null);
+        }}
+        onEdit={handleEditCategory}
+        onDelete={handleDeleteCategory}
+        onAddSubCategory={handleAddSubCategory}
+      />
+
+      {/* View Sub Category Detail Modal */}
+      <SubCategoryViewDetail
+        subCategoryId={subCategoryIdSelected || ""}
+        isOpen={isViewSubCategoryDetailModalOpen}
+        onClose={() => {
+          setIsViewSubCategoryDetailModalOpen(false);
+          setSubCategoryIdSelected(null);
+        }}
+        onEdit={handleEditSubCategory}
+        onDelete={handleDeleteSubCategory}
+      />
     </div>
   );
 }
