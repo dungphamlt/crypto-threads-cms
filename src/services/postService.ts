@@ -45,14 +45,14 @@ export const postService = {
   },
 
   getPostsByCategory: (categoryId: string) => {
-    return get<PostDetail[]>(
+    return get<PostListResponse>(
       `/content-management/articles?category=${categoryId}`
     );
   },
 
   getPostsBySubCategory: (subCategoryId: string) => {
-    return get<PostDetail[]>(
-      `/content-management/articles?sub-category=${subCategoryId}`
+    return get<PostListResponse>(
+      `/content-management/articles?subCategory=${subCategoryId}`
     );
   },
 

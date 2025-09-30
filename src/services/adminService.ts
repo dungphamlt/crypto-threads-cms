@@ -37,7 +37,7 @@ export interface Author {
 
 export const adminService = {
   getProfile: () => {
-    return get<Author>("/admin-aggregate/profile");
+    return get<Admin>("/admin-aggregate/profile");
   },
 
   createAuthor: (author: Author) => {
@@ -57,10 +57,10 @@ export const adminService = {
   },
 
   updatePassword: (passwordData: {
-    currentPassword: string;
+    oldPassword: string;
     newPassword: string;
   }) => {
-    return patch<void>("/admin-aggregate/password", passwordData);
+    return post<void>("/admin-aggregate/change-password", passwordData);
   },
 
   getCmsLogs: async (page: number = 1, pageSize: number = 10) => {

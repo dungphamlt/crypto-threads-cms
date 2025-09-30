@@ -192,7 +192,7 @@ PostDetailModalProps) {
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.4 }}
-              className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10"
+              className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 px-6 py-3 flex items-center justify-between z-10"
             >
               <h2 className="font-semibold text-gray-900 text-lg">
                 Post Details
@@ -221,7 +221,11 @@ PostDetailModalProps) {
               </div>
             </motion.div>
 
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+            <div
+              className={`overflow-y-auto   ${
+                isFullscreen ? "h-[calc(100vh-70px)]" : "h-[calc(90vh-70px)]"
+              }`}
+            >
               {isLoading ? (
                 <LoadingSkeleton />
               ) : !post ? (

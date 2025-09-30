@@ -4,15 +4,15 @@ import {
   HomeIcon,
   UsersIcon,
   X,
-  SquareMenu,
+  FolderClosed,
   ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { Admin, AdminRole, adminService } from "@/services/adminService";
+import { useAuth } from "@/hooks/useAuth";
+import Image from "next/image";
 
 interface MenuSideBarProps {
   collapsed?: boolean;
@@ -28,11 +28,7 @@ interface MenuItem {
 
 function MenuSideBar({ collapsed = false, onCloseMobile }: MenuSideBarProps) {
   const router = useRouter();
-  const { data: profileData } = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => adminService.getProfile(),
-  });
-  const profile = profileData?.data as Admin;
+  const { isAdmin, profile } = useAuth();
 
   const menuItems: MenuItem[] = [
     // { name: "Dashboard", href: "/dashboard", icon: HomeIcon },
@@ -40,9 +36,9 @@ function MenuSideBar({ collapsed = false, onCloseMobile }: MenuSideBarProps) {
     {
       name: "Categories",
       href: "/categories",
-      icon: SquareMenu,
+      icon: FolderClosed,
     },
-    ...(profile?.role === AdminRole.ADMIN
+    ...(isAdmin
       ? [{ name: "Author", href: "/authors", icon: UsersIcon }]
       : [{ name: "My Profile", href: "/profile", icon: UsersIcon }]),
     // { name: "CMS Logs", href: "/logs", icon: TextSearch },
@@ -177,24 +173,60 @@ function MenuSideBar({ collapsed = false, onCloseMobile }: MenuSideBarProps) {
       <div className="border-t border-gray-100 p-4 bg-gradient-to-r from-gray-50 to-white">
         {collapsed ? (
           <div className="flex justify-center">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-secondary to-secondary/80 text-primary grid place-items-center text-sm font-bold shadow-sm">
-              {"AD"}
-            </div>
+            {isAdmin ? (
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-secondary to-secondary/80 text-primary grid place-items-center text-sm font-bold shadow-sm">
+                {"AD"}
+              </div>
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-secondary to-secondary/80 text-primary grid place-items-center text-sm font-bold shadow-sm">
+                <Image
+                  src={profile?.avatarUrl || "/logo.png"}
+                  alt={profile?.penName || "Admin"}
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                />
+              </div>
+            )}
           </div>
         ) : (
-          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-thirdary/30 transition-all duration-200">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-secondary to-secondary/80 text-primary grid place-items-center text-sm font-bold shadow-sm">
-              {"AD"}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-primary">
-                Admin User
-              </p>
-              <p className="truncate text-xs text-primary/50 font-medium">
-                admin@crypto.com
-              </p>
-            </div>
-          </div>
+          <>
+            {isAdmin ? (
+              <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-thirdary/30 transition-all duration-200">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-secondary to-secondary/80 text-primary grid place-items-center text-sm font-bold shadow-sm">
+                  {"AD"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-primary">
+                    Admin User
+                  </p>
+                  <p className="truncate text-xs text-primary/50 font-medium">
+                    admin@crypto.com
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-thirdary/30 transition-all duration-200">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-secondary to-secondary/80 text-primary grid place-items-center text-sm font-bold shadow-sm">
+                  <Image
+                    src={profile?.avatarUrl || "/logo.png"}
+                    alt={profile?.penName || "Admin"}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-primary">
+                    {profile?.penName}
+                  </p>
+                  <p className="truncate text-xs text-primary/50 font-medium">
+                    {profile?.email}
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </aside>

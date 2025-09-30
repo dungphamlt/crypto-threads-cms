@@ -3,10 +3,14 @@
 import { useState } from "react";
 import MenuSideBar from "@/components/menuSideBar";
 import { Menu } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import Image from "next/image";
+import Link from "next/link";
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { profile, isAdmin } = useAuth();
 
   return (
     <div className="flex h-screen bg-thirdary text-primary">
@@ -71,12 +75,35 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* User pill */}
-            <div className="hidden md:flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full grid place-items-center text-xs font-semibold text-white bg-primary">
-                AD
-              </div>
-              <span className="text-sm font-medium">Admin</span>
-            </div>
+            {isAdmin ? (
+              <Link
+                href="/authors"
+                className="hidden md:flex items-center gap-2"
+              >
+                <div className="h-8 w-8 rounded-full border border-primary grid place-items-center bg-primary text-white">
+                  AD
+                </div>
+                <span className="text-sm font-medium">Admin</span>
+              </Link>
+            ) : (
+              <Link
+                href="/profile"
+                className="hidden md:flex items-center gap-2"
+              >
+                <div className="h-8 w-8 rounded-full border border-primary">
+                  <Image
+                    src={profile?.avatarUrl || "/logo.png"}
+                    alt={profile?.penName || "Admin"}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
+                </div>
+                <span className="text-sm font-medium">
+                  {profile?.penName || "Admin"}
+                </span>
+              </Link>
+            )}
           </div>
         </header>
 

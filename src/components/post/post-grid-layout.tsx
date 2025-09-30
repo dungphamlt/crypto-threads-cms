@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Pagination, Empty } from "antd";
 import {
   SearchOutlined,
@@ -12,138 +12,153 @@ import {
 import { type PostDetail, postService } from "@/services/postService";
 import PostCard from "@/components/post/post-card";
 import toast from "react-hot-toast";
+import PostViewDetail from "./post-view-detail";
+import PostFormModal from "./post-create";
+
+// Filter state interface
+interface FilterState {
+  searchText: string;
+  category: string;
+  subCategory: string;
+  creator: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+}
 
 function PostGridLayout() {
   const [filteredData, setFilteredData] = useState<PostDetail[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterSubCategory, setFilterSubCategory] = useState("");
-  const [filterCreator, setFilterCreator] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterStartDate, setFilterStartDate] = useState("");
-  const [filterEndDate, setFilterEndDate] = useState("");
+  const [filters, setFilters] = useState<FilterState>({
+    searchText: "",
+    category: "",
+    subCategory: "",
+    creator: "",
+    status: "",
+    startDate: "",
+    endDate: "",
+  });
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 12,
+    pageSize: 6,
     total: 0,
   });
+  const [viewPostId, setViewPostId] = useState("");
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editPost, setEditPost] = useState<PostDetail | null>(null);
 
-  // Fetch posts function
-  const fetchPosts = async (page = 1, pageSize = 12) => {
-    setLoading(true);
-    try {
-      const response = await postService.getPostList({
-        page,
-        pageSize,
-        search: searchText || undefined,
-        category: filterCategory || undefined,
-        subCategory: filterSubCategory || undefined,
-        creator: filterCreator || undefined,
-        status: filterStatus || undefined,
-        startDate: filterStartDate || undefined,
-        endDate: filterEndDate || undefined,
-      });
+  // Fetch posts function with optimized filters
+  const fetchPosts = useCallback(
+    async (page = 1, pageSize = 6) => {
+      setLoading(true);
+      try {
+        // Build query params object, only including non-empty values
+        const queryParams = {
+          page,
+          pageSize,
+          ...Object.fromEntries(
+            Object.entries(filters)
+              .map(([key, value]) => [
+                key === "searchText" ? "search" : key,
+                value || undefined,
+              ])
+              .filter(([, value]) => value !== undefined)
+          ),
+        };
 
-      if (response.success && response.data?.data) {
-        setPagination((prev) => ({
-          ...prev,
-          total: response.data?.pagination.totalItems ?? 0,
-        }));
-        // Ensure all data is properly formatted
-        const posts = response.data.data ?? [];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formattedPosts = posts.map((post: any) => ({
-          ...post,
-          // Ensure category is a string
-          category:
-            typeof post.category === "object"
-              ? post.category?.id || post.category?.key || "Unknown"
-              : String(post.category || "Unknown"),
-          // Ensure subCategory is a string
-          subCategory:
-            typeof post.subCategory === "object"
-              ? post.subCategory?.id || post.subCategory?.key || ""
-              : String(post.subCategory || ""),
-          // Ensure tags are strings
-          tags: Array.isArray(post.tags)
-            ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              post.tags.map((tag: any) => String(tag))
-            : [],
-        }));
-        setFilteredData(formattedPosts);
-      } else {
-        toast.error(response.error || "Failed to fetch posts");
+        const response = await postService.getPostList(queryParams);
+
+        if (response.success && response.data?.data) {
+          setPagination((prev) => ({
+            ...prev,
+            total: response.data?.pagination.totalItems ?? 0,
+          }));
+          // Ensure all data is properly formatted
+          const posts = response.data.data ?? [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const formattedPosts = posts.map((post: any) => ({
+            ...post,
+            tags: Array.isArray(post.tags)
+              ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                post.tags.map((tag: any) => String(tag))
+              : [],
+          }));
+          setFilteredData(formattedPosts);
+        } else {
+          toast.error(response.error || "Failed to fetch posts");
+          setFilteredData([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch posts:", error);
+        toast.error("Failed to fetch posts");
         setFilteredData([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch posts:", error);
-      toast.error("Failed to fetch posts");
-      setFilteredData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [filters]
+  );
 
   useEffect(() => {
     fetchPosts(pagination.current, pagination.pageSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPosts]);
+
+  // Optimized filter handlers
+  const updateFilter = useCallback((key: keyof FilterState, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
   }, []);
 
-  // Handle search and filters
-  const handleSearch = () => {
-    setPagination((prev) => ({ ...prev, current: 1 }));
+  const handleSearch = useCallback(() => {
     fetchPosts(1, pagination.pageSize);
-  };
+  }, [fetchPosts, pagination.pageSize]);
 
-  const handleReset = () => {
-    setSearchText("");
-    setFilterCategory("");
-    setFilterSubCategory("");
-    setFilterCreator("");
-    setFilterStatus("");
-    setFilterStartDate("");
-    setFilterEndDate("");
+  const handleReset = useCallback(() => {
+    setFilters({
+      searchText: "",
+      category: "",
+      subCategory: "",
+      creator: "",
+      status: "",
+      startDate: "",
+      endDate: "",
+    });
     setPagination((prev) => ({ ...prev, current: 1 }));
-    fetchPosts(1, pagination.pageSize);
-  };
+  }, []);
 
   // Handle pagination change
-  const handlePaginationChange = (page: number, pageSize?: number) => {
-    const newPageSize = pageSize || pagination.pageSize;
-    setPagination((prev) => ({
-      ...prev,
-      current: page,
-      pageSize: newPageSize,
-    }));
-    fetchPosts(page, newPageSize);
-  };
+  const handlePaginationChange = useCallback(
+    (page: number, pageSize?: number) => {
+      const newPageSize = pageSize || pagination.pageSize;
+      setPagination((prev) => ({
+        ...prev,
+        current: page,
+        pageSize: newPageSize,
+      }));
+    },
+    [pagination.pageSize]
+  );
 
-  // Post actions
-  const handleEditPost = (postId: string) => {
+  const handleEditPost = useCallback((post: PostDetail) => {
     // Navigate to edit page
-    window.location.href = `/posts/edit/${postId}`;
-  };
+    setEditPost(post);
+    setIsEditModalOpen(true);
+  }, []);
 
-  const handleDeletePost = (postId: string) => {
-    // Implement delete functionality when API is ready
-    console.log("Delete post:", postId);
-    toast("Delete functionality coming soon");
-  };
-
-  const handleSharePost = (postId: string) => {
+  const handleSharePost = useCallback((postId: string) => {
     // Copy post URL to clipboard
     const url = `${window.location.origin}/posts/view/${postId}`;
     navigator.clipboard.writeText(url).then(() => {
       toast.success("Post URL copied to clipboard!");
     });
-  };
+  }, []);
 
-  const handleReportPost = (postId: string) => {
-    // Implement report functionality
-    console.log("Report post:", postId);
-    toast("Report functionality coming soon");
-  };
+  const handleViewPost = useCallback((postId: string) => {
+    setViewPostId(postId);
+    setIsViewModalOpen(true);
+  }, []);
 
   // Get paginated data
   const getCurrentPageData = () => {
@@ -153,18 +168,13 @@ function PostGridLayout() {
   };
 
   const renderFilterSection = () => {
-    const hasActiveFilters =
-      searchText ||
-      filterCategory ||
-      filterSubCategory ||
-      filterCreator ||
-      filterStatus ||
-      filterStartDate ||
-      filterEndDate;
+    const hasActiveFilters = Object.values(filters).some(
+      (value) => value !== ""
+    );
 
     return (
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 m-6 mb-4">
-        <div className="px-6 py-4">
+      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 mb-4">
+        <div className="py-4 px-6">
           {/* Filter Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {/* Category Select */}
@@ -177,8 +187,8 @@ function PostGridLayout() {
               </label>
               <div className="relative">
                 <select
-                  value={filterCategory || ""}
-                  onChange={(e) => setFilterCategory(e.target.value)}
+                  value={filters.category}
+                  onChange={(e) => updateFilter("category", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
                   <option value="">Select category</option>
@@ -205,9 +215,9 @@ function PostGridLayout() {
                     />
                   </svg>
                 </div>
-                {filterCategory && (
+                {filters.category && (
                   <button
-                    onClick={() => setFilterCategory("")}
+                    onClick={() => updateFilter("category", "")}
                     className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <ClearOutlined />
@@ -226,8 +236,8 @@ function PostGridLayout() {
               </label>
               <div className="relative">
                 <select
-                  value={filterSubCategory || ""}
-                  onChange={(e) => setFilterSubCategory(e.target.value)}
+                  value={filters.subCategory}
+                  onChange={(e) => updateFilter("subCategory", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
                   <option value="">Select sub-category</option>
@@ -254,9 +264,9 @@ function PostGridLayout() {
                     />
                   </svg>
                 </div>
-                {filterSubCategory && (
+                {filters.subCategory && (
                   <button
-                    onClick={() => setFilterSubCategory("")}
+                    onClick={() => updateFilter("subCategory", "")}
                     className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <ClearOutlined />
@@ -273,8 +283,8 @@ function PostGridLayout() {
               </label>
               <div className="relative">
                 <select
-                  value={filterCreator || ""}
-                  onChange={(e) => setFilterCreator(e.target.value)}
+                  value={filters.creator}
+                  onChange={(e) => updateFilter("creator", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
                   <option value="">Select creator</option>
@@ -298,9 +308,9 @@ function PostGridLayout() {
                     />
                   </svg>
                 </div>
-                {filterCreator && (
+                {filters.creator && (
                   <button
-                    onClick={() => setFilterCreator("")}
+                    onClick={() => updateFilter("creator", "")}
                     className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <ClearOutlined />
@@ -318,13 +328,13 @@ function PostGridLayout() {
               <div className="relative">
                 <input
                   type="date"
-                  value={filterStartDate}
-                  onChange={(e) => setFilterStartDate(e.target.value)}
+                  value={filters.startDate}
+                  onChange={(e) => updateFilter("startDate", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
                 />
-                {filterStartDate && (
+                {filters.startDate && (
                   <button
-                    onClick={() => setFilterStartDate("")}
+                    onClick={() => updateFilter("startDate", "")}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <ClearOutlined />
@@ -342,13 +352,13 @@ function PostGridLayout() {
               <div className="relative">
                 <input
                   type="date"
-                  value={filterEndDate}
-                  onChange={(e) => setFilterEndDate(e.target.value)}
+                  value={filters.endDate}
+                  onChange={(e) => updateFilter("endDate", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
                 />
-                {filterEndDate && (
+                {filters.endDate && (
                   <button
-                    onClick={() => setFilterEndDate("")}
+                    onClick={() => updateFilter("endDate", "")}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <ClearOutlined />
@@ -370,8 +380,8 @@ function PostGridLayout() {
                 <input
                   type="text"
                   placeholder="Search by title, excerpt, or meta description..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
+                  value={filters.searchText}
+                  onChange={(e) => updateFilter("searchText", e.target.value)}
                   onKeyPress={(e) => {
                     if (e.key === "Enter") {
                       handleSearch();
@@ -380,9 +390,9 @@ function PostGridLayout() {
                   className="w-full h-10 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
                 />
                 <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                {searchText && (
+                {filters.searchText && (
                   <button
-                    onClick={() => setSearchText("")}
+                    onClick={() => updateFilter("searchText", "")}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <ClearOutlined />
@@ -399,8 +409,8 @@ function PostGridLayout() {
                 </label>
                 <div className="relative">
                   <select
-                    value={filterStatus || ""}
-                    onChange={(e) => setFilterStatus(e.target.value)}
+                    value={filters.status}
+                    onChange={(e) => updateFilter("status", e.target.value)}
                     className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                   >
                     <option value="">Select status</option>
@@ -423,9 +433,9 @@ function PostGridLayout() {
                       />
                     </svg>
                   </div>
-                  {filterStatus && (
+                  {filters.status && (
                     <button
-                      onClick={() => setFilterStatus("")}
+                      onClick={() => updateFilter("status", "")}
                       className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
                       <ClearOutlined />
@@ -462,7 +472,7 @@ function PostGridLayout() {
       {renderFilterSection()}
 
       {/* Posts Grid */}
-      <div className="min-h-[400px]">
+      <div className="min-h-[400px] pt-4">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
@@ -479,11 +489,10 @@ function PostGridLayout() {
             {getCurrentPageData().map((post) => (
               <PostCard
                 key={post.id}
-                post={post}
+                initialPost={post}
                 onEdit={handleEditPost}
-                onDelete={handleDeletePost}
                 onShare={handleSharePost}
-                onReport={handleReportPost}
+                onView={handleViewPost}
               />
             ))}
           </div>
@@ -504,10 +513,31 @@ function PostGridLayout() {
             }
             onChange={handlePaginationChange}
             onShowSizeChange={handlePaginationChange}
-            pageSizeOptions={["12", "24", "36", "48"]}
+            pageSizeOptions={["6", "9", "12", "15"]}
           />
         </div>
       )}
+      {/* View Post Modal */}
+      <PostViewDetail
+        postId={viewPostId}
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setViewPostId("");
+        }}
+      />
+
+      {/* Create Post Modal */}
+      <PostFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        initialData={editPost}
+        postId={editPost?.id}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          fetchPosts(1, pagination.pageSize);
+        }}
+      />
     </div>
   );
 }

@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { Edit2, Link2, X, Save, Plus, Trash2, Key } from "lucide-react";
-import { Admin, adminService, Author } from "@/services/adminService";
-import { useQuery } from "@tanstack/react-query";
+import { adminService, Author } from "@/services/adminService";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import TelegramIcon from "@/assets/icon/telegram.svg";
 import XIcon from "@/assets/icon/x.svg";
 import FacebookIcon from "@/assets/icon/facebook.svg";
 import InstagramIcon from "@/assets/icon/instagram.svg";
+import { useAuth } from "@/hooks/useAuth";
 
 const SOCIAL_TYPE_OPTIONS = [
   {
@@ -43,21 +43,12 @@ export default function ProfilePage() {
   const [designationInput, setDesignationInput] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
+    oldPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  const {
-    data: profileData,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => adminService.getProfile(),
-  });
-
-  const profile = profileData?.data as Admin;
+  const { profile, isLoading, refetch } = useAuth();
 
   const handleEdit = () => {
     setEditedProfile({
@@ -220,7 +211,7 @@ export default function ProfilePage() {
 
     try {
       const response = await adminService.updatePassword({
-        currentPassword: passwordData.currentPassword,
+        oldPassword: passwordData.oldPassword,
         newPassword: passwordData.newPassword,
       });
 
@@ -228,7 +219,7 @@ export default function ProfilePage() {
         toast.success("Password updated successfully!");
         setShowPasswordModal(false);
         setPasswordData({
-          currentPassword: "",
+          oldPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
@@ -289,10 +280,10 @@ export default function ProfilePage() {
             <>
               <button
                 onClick={() => setShowPasswordModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/80 transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <Key className="h-4 w-4" />
-                Update Password
+                Change Password
               </button>
               <button
                 onClick={handleEdit}
@@ -690,8 +681,8 @@ export default function ProfilePage() {
                 </label>
                 <input
                   type="password"
-                  name="currentPassword"
-                  value={passwordData.currentPassword}
+                  name="oldPassword"
+                  value={passwordData.oldPassword}
                   onChange={handlePasswordChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter current password"

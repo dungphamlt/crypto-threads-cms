@@ -25,9 +25,10 @@ export interface UpdatePasswordDto {
 }
 
 export interface Creator {
-  _id: string;
   email: string;
   id: string;
+  penName: string;
+  avatarUrl: string;
 }
 
 export interface Post {

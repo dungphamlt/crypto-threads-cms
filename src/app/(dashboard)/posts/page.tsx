@@ -92,9 +92,7 @@ function PostsManagement() {
         {viewMode === "table" ? (
           <PostTableLayout key={`table-${refreshKey}`} />
         ) : (
-          <div className="p-6">
-            <PostGridLayout key={`grid-${refreshKey}`} />
-          </div>
+          <PostGridLayout key={`grid-${refreshKey}`} />
         )}
       </div>
 

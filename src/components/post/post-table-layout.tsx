@@ -5,20 +5,10 @@ import ProTable, {
   type ProColumns,
   type ActionType,
 } from "@ant-design/pro-table";
-import {
-  Tag,
-  Space,
-  Button,
-  Popconfirm,
-  Avatar,
-  Image,
-  ConfigProvider,
-  Tooltip,
-} from "antd";
+import { Tag, Space, Button, Image, ConfigProvider, Tooltip } from "antd";
 import enUS from "antd/locale/en_US";
 import {
   EditOutlined,
-  DeleteOutlined,
   EyeOutlined,
   CalendarOutlined,
   UserOutlined,
@@ -27,22 +17,21 @@ import {
   EditOutlined as DraftOutlined,
   DeleteOutlined as TrashOutlined,
   SearchOutlined,
-  // FilterOutlined,
   ClearOutlined,
   CloseOutlined,
 } from "@ant-design/icons";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { type PostDetail, postService } from "@/services/postService";
 import { categoryService } from "@/services/categoryService";
 import { POST_STATUS, type SubCategory } from "@/types";
 import { toast } from "react-hot-toast";
 import PostViewDetail from "@/components/post/post-view-detail";
 import PostFormModal from "@/components/post/post-create";
+import DeletePostButton from "@/components/post/DeletePostButton";
 import { getSafeImageUrl } from "@/utils/imageUtils";
 
 function PostTableLayout() {
   const actionRef = useRef<ActionType>(null);
-  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
 
   // View Modal States
@@ -145,37 +134,6 @@ function PostTableLayout() {
     }
   };
 
-  // Handle delete post
-  const handleDelete = async (id: string) => {
-    const toastId = toast.loading("Deleting post...");
-    try {
-      const response = await postService.updatePostStatus(
-        id,
-        POST_STATUS.TRASH
-      );
-      if (response.success) {
-        toast.success("Post moved to trash successfully", { id: toastId });
-        actionRef.current?.reload();
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-
-        // Close modals if they're showing the deleted post
-        if (viewPostId === id) {
-          setViewPostId("");
-          setIsViewModalOpen(false);
-        }
-        if (editPost?.id === id) {
-          setEditPost(null);
-          setIsEditModalOpen(false);
-        }
-      } else {
-        toast.error(response.error || "Failed to delete post", { id: toastId });
-      }
-    } catch (error) {
-      console.error("Delete error:", error);
-      toast.error("Failed to delete post", { id: toastId });
-    }
-  };
-
   // Handle edit post
   const handleEdit = (post: PostDetail | string) => {
     if (typeof post === "string") {
@@ -216,12 +174,15 @@ function PostTableLayout() {
     setIsViewModalOpen(true);
   };
 
-  // Handle post success (create/edit)
-  const handlePostSuccess = (post: PostDetail) => {
-    // Refresh the table
-    console.log("Post updated successfully", post);
+  const handleDeleteSuccess = () => {
+    // Reload current page to refresh the table
     actionRef.current?.reload();
-    queryClient.invalidateQueries({ queryKey: ["posts"] });
+  };
+
+  // Handle post success (create/edit)
+  const handlePostSuccess = () => {
+    // Reload current page to refresh the table
+    actionRef.current?.reload();
 
     // Close modals
     setIsCreateModalOpen(false);
@@ -338,6 +299,7 @@ function PostTableLayout() {
 
   // Define columns
   const columns: ProColumns<PostDetail>[] = [
+    // Cover Image
     {
       title: "Cover",
       key: "cover",
@@ -349,7 +311,7 @@ function PostTableLayout() {
             height={45}
             src={getSafeImageUrl(record.coverUrl, "small")}
             alt={record.title}
-            className="rounded-lg object-cover shadow-sm"
+            className="rounded-sm object-cover shadow-[0_0_3px_1px_rgba(0,0,0,0.2)]"
             placeholder={
               <div className="w-15 h-11 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
                 <span className="text-xs text-gray-400">No Image</span>
@@ -359,6 +321,7 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Title
     {
       title: "Title",
       dataIndex: "title",
@@ -381,6 +344,7 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Excerpt
     {
       title: "Excerpt",
       dataIndex: "excerpt",
@@ -400,6 +364,7 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Meta Description
     {
       title: "Meta Description",
       dataIndex: "metaDescription",
@@ -419,31 +384,36 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Author
     {
       title: "Author",
-      dataIndex: ["creator", "email"],
+      dataIndex: ["creator"],
       key: "author",
       width: 180,
       render: (_, record) => (
         <div className="flex items-center space-x-2">
-          <Avatar
-            size={32}
-            className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold"
-            icon={<UserOutlined />}
-          >
-            {String(record.creator?.email?.charAt(0) || "U").toUpperCase()}
-          </Avatar>
-          <div>
-            <div className="text-sm font-medium text-gray-900">
-              {String(record.creator?.email || "Unknown")}
+          {record.creator.avatarUrl ? (
+            <Image
+              width={32}
+              height={32}
+              src={getSafeImageUrl(record.creator.avatarUrl, "small")}
+              alt={record.creator.email}
+              className="rounded-full object-cover shadow-[0_0_3px_1px_rgba(0,0,0,0.2)]"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-full object-cover ring-1 ring-primary/10 bg-primary flex items-center justify-center text-white">
+              {record.creator.penName.charAt(0)}
             </div>
-            <div className="text-xs text-gray-500">
-              ID: {String(record.creator?.id || "N/A").slice(-8)}
+          )}
+          <div>
+            <div className="text-sm text-gray-600">
+              {String(record.creator?.penName || "Unknown")}
             </div>
           </div>
         </div>
       ),
     },
+    // Category
     {
       title: "Category",
       dataIndex: "category",
@@ -512,6 +482,7 @@ function PostTableLayout() {
         );
       },
     },
+    // Tags
     {
       title: "Tags",
       dataIndex: "tags",
@@ -544,6 +515,7 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Status
     {
       title: "Status",
       dataIndex: "status",
@@ -553,6 +525,7 @@ function PostTableLayout() {
         return <StatusBadge status={record.status} />;
       },
     },
+    // Stats
     {
       title: "Stats",
       key: "stats",
@@ -566,6 +539,7 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Updated
     {
       title: "Updated",
       dataIndex: "updatedAt",
@@ -593,6 +567,7 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Actions
     {
       title: "Actions",
       key: "actions",
@@ -620,24 +595,10 @@ function PostTableLayout() {
             />
           </Tooltip>
 
-          <Popconfirm
-            title="Delete Post"
-            description="Are you sure you want to move this post to trash? This action can be undone."
-            onConfirm={() => handleDelete(record.id)}
-            okText="Move to Trash"
-            cancelText="Cancel"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Move to Trash">
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                className="hover:bg-red-50"
-              />
-            </Tooltip>
-          </Popconfirm>
+          <DeletePostButton
+            postId={record.id}
+            onSuccess={handleDeleteSuccess}
+          />
         </Space>
       ),
     },

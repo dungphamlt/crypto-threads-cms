@@ -1,47 +1,46 @@
 "use client";
 
 import {
-  Bookmark,
   Eye,
   Heart,
   MessageSquare,
   MoreHorizontal,
   Edit,
-  Trash2,
   Share2,
-  Flag,
+  UserIcon,
+  Tag,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import type { PostDetail } from "@/services/postService";
+import { postService, type PostDetail } from "@/services/postService";
 import Image from "next/image";
+import Logo from "@/assets/images/logo.png";
+import DeletePostButton from "./DeletePostButton";
 
 export interface PostCardProps {
-  post: PostDetail;
-  onEdit?: (postId: string) => void;
-  onDelete?: (postId: string) => void;
+  initialPost: PostDetail;
+  onEdit?: (post: PostDetail) => void;
   onShare?: (postId: string) => void;
-  onReport?: (postId: string) => void;
+  onView?: (postId: string) => void;
 }
 
 export default function PostCard({
-  post,
+  initialPost,
   onEdit,
-  onDelete,
   onShare,
-  onReport,
+  onView,
 }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [post, setPost] = useState<PostDetail>(initialPost);
 
-  // Load category data
-  // const { data: categoriesResponse } = useQuery({
-  //   queryKey: ["categories"],
-  //   queryFn: () => categoryService.getCategoryList(),
-  //   staleTime: 5 * 60 * 1000, // 5 minutes
-  // });
+  const fetchPost = async () => {
+    const response = await postService.getPostDetail(initialPost?.id);
+    if (response.success && response.data) {
+      setPost(response.data);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -72,13 +71,13 @@ export default function PostCard({
     );
 
     if (diffInHours < 24) {
-      return `${diffInHours} giờ trước`;
-    } else if (diffInHours < 24 * 30) {
-      const days = Math.floor(diffInHours / 24);
-      return `${days} ngày trước`;
+      return `${diffInHours} hours ago`;
     } else {
-      const months = Math.floor(diffInHours / (24 * 30));
-      return `${months} tháng trước`;
+      return date.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
     }
   };
 
@@ -98,23 +97,50 @@ export default function PostCard({
     setShowPopup(false);
   };
 
+  const handleDeleteSuccess = () => {
+    fetchPost();
+    setShowPopup(false);
+  };
+
   return (
-    <article className="overflow-hidden rounded-2xl border border-primary/10 bg-white shadow-sm">
+    <div
+      key={post.id}
+      className="overflow-hidden flex flex-col rounded-2xl border border-primary/10 bg-white shadow-sm"
+    >
       {/* Header */}
       <header className="flex items-start justify-between gap-3 p-4">
         <div className="flex items-center gap-3">
-          <Image
-            src="/diverse-avatars.png"
-            alt="Ảnh đại diện"
-            width={40}
-            height={40}
-            className="h-10 w-10 rounded-full object-cover ring-1 ring-primary/10"
-          />
+          {post.creator.avatarUrl ? (
+            <Image
+              src={post.creator.avatarUrl || "/diverse-avatars.png"}
+              alt="Ảnh đại diện"
+              width={40}
+              height={40}
+              className="h-12 w-12 rounded-full object-cover ring-1 ring-primary/10 shadow-sm"
+            />
+          ) : (
+            <div className="h-12 w-12 rounded-full object-cover ring-1 ring-primary/10 bg-primary flex items-center justify-center text-white">
+              {post.creator.penName
+                ? post.creator.penName.charAt(0)
+                : post.creator.email.charAt(0)}
+            </div>
+          )}
           <div>
-            <div className="flex flex-wrap items-center gap-1 text-sm">
-              <span className="font-semibold text-primary">Admin</span>
-              <span className="text-primary/50">tại</span>
-              <span className="text-primary/80">{post.category.key}</span>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <div className="font-semibold flex items-center gap-2 text-primary bg-gray-100 px-2 py-1 rounded-md">
+                <UserIcon className="w-4 h-4" />
+                {post.creator.penName}
+              </div>
+              <div className="text-blue-600 text-sm py-1 px-2 rounded-md bg-blue-100 flex items-center gap-2">
+                <Tag className="w-4 h-4" />
+                {post.category.key}
+              </div>
+              {post.subCategory && (
+                <div className="text-purple-600 text-sm py-1 px-2 rounded-md bg-purple-100 flex items-center gap-2">
+                  <Tag className="w-4 h-4" />
+                  {post.subCategory.key}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 text-xs text-primary/50">
               <span>{formatTimeAgo(post.createdAt)}</span>
@@ -145,52 +171,40 @@ export default function PostCard({
               className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-50"
             >
               <div className="py-1">
+                {onView && (
+                  <button
+                    onClick={() => handleActionClick(() => onView(post.id))}
+                    className="flex w-full items-center px-4 py-2 text-sm text-blue-700 hover:bg-blue-100 transition-colors"
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    View detail
+                  </button>
+                )}
                 {onEdit && (
                   <button
-                    onClick={() => handleActionClick(() => onEdit(post.id))}
-                    className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    onClick={() => handleActionClick(() => onEdit(post))}
+                    className="flex w-full items-center px-4 py-2 text-sm text-green-700 hover:bg-green-100 transition-colors"
                   >
                     <Edit className="mr-2 h-4 w-4" />
-                    Chỉnh sửa
+                    Edit
                   </button>
                 )}
                 {onShare && (
                   <button
                     onClick={() => handleActionClick(() => onShare(post.id))}
-                    className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    className="flex w-full items-center px-4 py-2 text-sm text-purple-700 hover:bg-purple-100 transition-colors"
                   >
                     <Share2 className="mr-2 h-4 w-4" />
-                    Chia sẻ
+                    Share
                   </button>
                 )}
-                <button
-                  onClick={() => handleActionClick(() => setIsSaved(!isSaved))}
-                  className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <Bookmark
-                    className={`mr-2 h-4 w-4 ${isSaved ? "fill-current" : ""}`}
-                  />
-                  {isSaved ? "Bỏ lưu" : "Lưu bài viết"}
-                </button>
-                <div className="border-t border-gray-100 my-1" />
-                {onReport && (
-                  <button
-                    onClick={() => handleActionClick(() => onReport(post.id))}
-                    className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <Flag className="mr-2 h-4 w-4" />
-                    Báo cáo
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={() => handleActionClick(() => onDelete(post.id))}
-                    className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Xóa bài viết
-                  </button>
-                )}
+                <DeletePostButton
+                  postId={post.id}
+                  title="Move to Trash"
+                  className="w-full px-4 py-2 justify-start"
+                  onSuccess={handleDeleteSuccess}
+                  disabled={post.status === "trash"}
+                />
               </div>
             </div>
           )}
@@ -198,15 +212,12 @@ export default function PostCard({
       </header>
 
       {/* Body */}
-      <div className="px-4">
-        <h2 className="mb-1 text-lg font-semibold leading-snug text-primary">
+      <div className="px-4 flex-1">
+        <h2 className="mb-1 text-md font-semibold leading-snug text-black">
           {post.title}
         </h2>
-        <p className="mb-3 text-[15px] leading-6 text-primary/80">
+        <p className="mb-3 text-sm leading-6 text-gray-600">
           {post.metaDescription || post.excerpt || "Không có mô tả"}
-          <button type="button" className="ml-1 text-primary hover:underline">
-            xem thêm
-          </button>
         </p>
       </div>
 
@@ -214,11 +225,11 @@ export default function PostCard({
       {post.coverUrl && (
         <div className="mt-1">
           <Image
-            src={post.coverUrl.startsWith("http") ? post.coverUrl : `/logo.png`}
+            src={post.coverUrl.startsWith("http") ? post.coverUrl : Logo}
             alt="Ảnh nội dung bài viết"
             width={400}
             height={300}
-            className="h-auto w-full object-cover"
+            className="h-[300px] w-full object-cover"
           />
         </div>
       )}
@@ -249,6 +260,6 @@ export default function PostCard({
 
         <div className="text-xs text-primary/50">ID: {post.id}</div>
       </div>
-    </article>
+    </div>
   );
 }

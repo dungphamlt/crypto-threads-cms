@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Modal } from "antd";
 import {
   Edit,
@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import { categoryService } from "@/services/categoryService";
 import { postService } from "@/services/postService";
-import { Category, SubCategory, PostDetail } from "@/types";
 import Link from "next/link";
+import { useQueries } from "@tanstack/react-query";
 
 interface CategoryViewDetailProps {
   categoryId: string;
@@ -33,12 +33,44 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
   onDelete,
   onAddSubCategory,
 }) => {
-  const [category, setCategory] = useState<Category | null>(null);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [posts, setPosts] = useState<PostDetail[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [subCategoriesLoading, setSubCategoriesLoading] = useState(false);
-  //   const [postsLoading, setPostsLoading] = useState(false);
+  // Load categories, subcategories, posts dùng useQueries
+  const [
+    { data: categoryResponse, isLoading: categoryLoading },
+    { data: subCategoriesResponse, isLoading: subCategoriesLoading },
+    { data: postsResponse, isLoading: postsLoading },
+  ] = useQueries({
+    queries: [
+      {
+        queryKey: ["category", categoryId],
+        queryFn: () => categoryService.getCategoryDetail(categoryId),
+        enabled: !!categoryId && isOpen,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: 2,
+      },
+      {
+        queryKey: ["subCategories", categoryId],
+        queryFn: () => categoryService.getSubCategoryByCategoryId(categoryId),
+        enabled: !!categoryId && isOpen,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: 2,
+      },
+      {
+        queryKey: ["posts", categoryId],
+        queryFn: () => postService.getPostsByCategory(categoryId),
+        enabled: !!categoryId && isOpen,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        retry: 2,
+      },
+    ],
+  });
+
+  const category = categoryResponse?.success ? categoryResponse.data : null;
+  const subCategories = subCategoriesResponse?.success
+    ? subCategoriesResponse.data
+    : [];
+  const posts = postsResponse?.success ? postsResponse.data : [];
+
+  const loading = categoryLoading || subCategoriesLoading || postsLoading;
 
   const handleEdit = () => {
     if (onEdit) {
@@ -57,66 +89,6 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
       onAddSubCategory(categoryId);
     }
   };
-
-  useEffect(() => {
-    if (isOpen && categoryId) {
-      setLoading(true);
-      setSubCategoriesLoading(true);
-      //   setPostsLoading(true);
-
-      const fetchCategory = async () => {
-        try {
-          const response = await categoryService.getCategoryDetail(categoryId);
-          if (response.success && response.data) {
-            setCategory(response.data);
-          } else {
-            setCategory(null);
-          }
-        } catch (error) {
-          console.error("Failed to fetch category:", error);
-          setCategory(null);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      const fetchSubCategories = async () => {
-        try {
-          const response = await categoryService.getSubCategoryByCategoryId(
-            categoryId
-          );
-          if (response.success && response.data) {
-            setSubCategories(response.data);
-          } else {
-            setSubCategories([]);
-          }
-        } catch (error) {
-          console.error("Failed to fetch sub-categories:", error);
-          setSubCategories([]);
-        } finally {
-          setSubCategoriesLoading(false);
-        }
-      };
-
-      const fetchPosts = async () => {
-        try {
-          const response = await postService.getPostsByCategory(categoryId);
-          if (response.success && response.data) {
-            setPosts(response.data);
-          } else {
-            setPosts([]);
-          }
-        } catch (error) {
-          console.error("Failed to fetch posts:", error);
-          setPosts([]);
-        }
-      };
-
-      fetchCategory();
-      fetchSubCategories();
-      fetchPosts();
-    }
-  }, [isOpen, categoryId]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -210,7 +182,7 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
               <div className="flex items-center">
                 <Folder className="h-5 w-5 text-blue-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Sub Categories ({subCategories.length})
+                  Sub Categories ({subCategories?.length || 0})
                 </h3>
               </div>
             </div>
@@ -219,14 +191,14 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                 </div>
-              ) : subCategories.length === 0 ? (
+              ) : subCategories?.length === 0 ? (
                 <div className="text-center py-8">
                   <Folder className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">No sub-categories found</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {subCategories.map((subCategory) => (
+                  {subCategories?.map((subCategory) => (
                     <div
                       key={subCategory.id}
                       className="flex items-center p-4 bg-gray-50 rounded-lg border"
@@ -268,7 +240,7 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
                 <div className="flex items-center gap-4">
                   <FileText className="h-5 w-5 text-purple-600 mr-2" />
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Posts ({posts.length})
+                    Posts ({Array.isArray(posts) ? posts.length : 0})
                   </h3>
                 </div>
                 <Link

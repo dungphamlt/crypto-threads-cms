@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import {
   CategoryCard,
@@ -14,6 +14,7 @@ import { categoryService } from "@/services/categoryService";
 import { Empty, Modal } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 import toast from "react-hot-toast";
+import { useQuery } from "@tanstack/react-query";
 
 function CategoriesManagement() {
   // Modal states
@@ -36,34 +37,20 @@ function CategoriesManagement() {
   const [editingSubCategory, setEditingSubCategory] =
     useState<SubCategory | null>(null);
 
-  // Data states
-  const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-
   // Load categories
-  const loadCategories = async () => {
-    try {
-      setLoading(true);
-      const response = await categoryService.getCategoryList();
-      if (response.success && response.data) {
-        setCategories(response.data);
-      } else {
-        console.error("Failed to load categories:", response.error);
-        setCategories([]);
-        toast.error("Failed to load categories");
-      }
-    } catch (error) {
-      console.error("Failed to load categories:", error);
-      setCategories([]);
-      toast.error("Failed to load categories");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: categoriesResponse,
+    isLoading: isLoadingCategories,
+    refetch: refetchCategories,
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryService.getCategoryList(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
+  const categories = categoriesResponse?.success
+    ? categoriesResponse.data || []
+    : [];
 
   // Category handlers
   const handleCreateCategory = () => {
@@ -103,7 +90,7 @@ function CategoriesManagement() {
           const response = await categoryService.deleteCategory(categoryId);
           if (response.success) {
             toast.success("Category deleted successfully");
-            loadCategories();
+            refetchCategories();
           } else {
             toast.error("Failed to delete category");
           }
@@ -122,7 +109,7 @@ function CategoriesManagement() {
         ? "Category updated successfully"
         : "Category created successfully"
     );
-    loadCategories();
+    refetchCategories();
     setIsCategoryModalOpen(false);
     setEditingCategory(null);
   };
@@ -156,7 +143,7 @@ function CategoriesManagement() {
           );
           if (response.success) {
             toast.success("Sub-category deleted successfully");
-            loadCategories();
+            refetchCategories();
           } else {
             toast.error("Failed to delete sub-category");
           }
@@ -175,7 +162,7 @@ function CategoriesManagement() {
         ? "Sub-category updated successfully"
         : "Sub-category created successfully"
     );
-    loadCategories();
+    refetchCategories();
     setIsSubCategoryModalOpen(false);
     setEditingSubCategory(null);
     setCategoryIdSelected(null);
@@ -207,7 +194,7 @@ function CategoriesManagement() {
       {/* Main Content */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 ">
         <div className="p-6">
-          {loading ? (
+          {isLoadingCategories ? (
             <div className="flex justify-center items-center h-64">
               <div className="flex flex-col items-center gap-4">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600" />

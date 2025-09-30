@@ -71,7 +71,7 @@ export default function CategoryCard({
   const subCategories = subCategoriesData?.success
     ? subCategoriesData.data || []
     : [];
-  const posts = postsData?.success ? postsData.data || [] : [];
+  const posts = postsData?.success ? postsData.data?.data || [] : [];
   const postCount = posts.length;
 
   // Loading and error states
@@ -204,7 +204,7 @@ export default function CategoryCard({
           </div>
         ) : hasError ? (
           <div className="text-sm text-red-500 py-2">
-            Không thể tải dữ liệu. Vui lòng thử lại.
+            no data found, please try again later
           </div>
         ) : (
           <div className="space-y-4">
@@ -213,7 +213,7 @@ export default function CategoryCard({
               <FileText className="h-4 w-4 text-gray-400" />
               <span className="text-gray-600">
                 <span className="font-medium text-gray-900">{postCount}</span>{" "}
-                bài viết
+                posts
               </span>
             </div>
 

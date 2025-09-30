@@ -3,6 +3,10 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import ReactQueryProvider from "./providers/ReactQueryProvider";
 import { Toaster } from "react-hot-toast";
+import { suppressAntdReact19Warning } from "@/utils/suppressAntdWarning";
+
+// Suppress antd React 19 warning
+suppressAntdReact19Warning();
 
 const inter = Inter({ subsets: ["latin"] });
 

@@ -20,7 +20,7 @@ export const categoryService = {
   },
   getSubCategoryDetail: (subCategoryId: string) => {
     return get<SubCategory>(
-      `/content-management/sub-categories/${subCategoryId}`
+      `/content-management/sub-categories/id/${subCategoryId}`
     );
   },
   createCategory: (key: string) => {

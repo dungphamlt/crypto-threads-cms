@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { categoryService } from "@/services/categoryService";
 import { postService } from "@/services/postService";
-import { SubCategory, PostDetail, Category } from "@/types";
+import { SubCategory, PostDetail } from "@/types";
 import Link from "next/link";
 
 interface SubCategoryViewDetailProps {
@@ -36,7 +36,6 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
   onBackToCategory,
 }) => {
   const [subCategory, setSubCategory] = useState<SubCategory | null>(null);
-  const [parentCategory, setParentCategory] = useState<Category | null>(null);
   const [posts, setPosts] = useState<PostDetail[]>([]);
   const [loading, setLoading] = useState(false);
   const [postsLoading, setPostsLoading] = useState(false);
@@ -54,8 +53,8 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
   };
 
   const handleBackToCategory = () => {
-    if (onBackToCategory && subCategory?.categoryId) {
-      onBackToCategory(subCategory.categoryId.id);
+    if (onBackToCategory && subCategoryId) {
+      onBackToCategory(subCategoryId);
     }
   };
 
@@ -63,7 +62,6 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
     if (isOpen && subCategoryId) {
       setLoading(true);
       setPostsLoading(true);
-
       const fetchSubCategory = async () => {
         try {
           const response = await categoryService.getSubCategoryDetail(
@@ -71,17 +69,6 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
           );
           if (response.success && response.data) {
             setSubCategory(response.data);
-            // Fetch parent category info
-            if (response.data.categoryId) {
-              const parentResponse = await categoryService.getCategoryDetail(
-                response.data.categoryId.id
-              );
-              if (parentResponse.success && parentResponse.data) {
-                setParentCategory(parentResponse.data);
-              }
-            }
-          } else {
-            setSubCategory(null);
           }
         } catch (error) {
           console.error("Failed to fetch sub-category:", error);
@@ -97,7 +84,7 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
             subCategoryId
           );
           if (response.success && response.data) {
-            setPosts(response.data);
+            setPosts(response.data.data);
           } else {
             setPosts([]);
           }
@@ -109,8 +96,8 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
         }
       };
 
-      fetchSubCategory();
       fetchPosts();
+      fetchSubCategory();
     }
   }, [isOpen, subCategoryId]);
 
@@ -156,38 +143,25 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
                 <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center text-white font-semibold text-3xl mx-auto mb-4"
+                  className="w-14 h-14 rounded-full flex items-center justify-center text-white font-semibold text-3xl mx-auto mb-4"
                   style={{ backgroundColor: "#8b5cf6" }}
                 >
                   📁
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900">
                   {subCategory.key}
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  ACTIVE
-                </span>
               </div>
               <div className="md:col-span-2">
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-500">
-                      ID
-                    </label>
-                    <div className="mt-1">
-                      <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                        {subCategory.id}
-                      </code>
-                    </div>
-                  </div>
-                  {parentCategory && (
+                  {subCategory.categoryId && (
                     <div className="flex items-center gap-2">
                       <label className="text-sm font-medium text-gray-500">
-                        Parent Category
+                        Category
                       </label>
                       <div className="mt-1">
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">
-                          {parentCategory.key}
+                          {subCategory.categoryId.key}
                         </span>
                       </div>
                     </div>
@@ -215,40 +189,6 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
             </div>
           </div>
 
-          {/* Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <FileText className="h-5 w-5 text-purple-600 mr-2" />
-                <span className="text-sm font-medium text-gray-500">
-                  Total Posts
-                </span>
-              </div>
-              <div className="text-2xl font-bold text-purple-600">
-                {posts.length}
-              </div>
-            </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Eye className="h-5 w-5 text-green-600 mr-2" />
-                <span className="text-sm font-medium text-gray-500">
-                  Total Views
-                </span>
-              </div>
-              <div className="text-2xl font-bold text-green-600">
-                {posts.reduce((sum, post) => sum + post.views, 0)}
-              </div>
-            </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <span className="text-sm font-medium text-gray-500">
-                  Status
-                </span>
-              </div>
-              <div className="text-2xl font-bold text-green-600">Active</div>
-            </div>
-          </div>
-
           {/* Posts */}
           <div className="bg-white rounded-lg border border-gray-200 mb-6">
             <div className="px-6 py-4 border-b border-gray-200">
@@ -259,12 +199,14 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
                     Posts ({posts.length})
                   </h3>
                 </div>
-                <Link
-                  href={`/posts?subCategory=${subCategory.id}`}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200 hover:underline"
-                >
-                  View All
-                </Link>
+                {posts.length > 0 && (
+                  <Link
+                    href={`/posts?subCategory=${subCategory.id}`}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200 hover:underline"
+                  >
+                    View All
+                  </Link>
+                )}
               </div>
             </div>
             <div className="p-6">
@@ -363,13 +305,13 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
           {/* Action Buttons */}
           <div className="flex justify-between items-center pt-6 border-t border-gray-200">
             <div className="flex items-center gap-3">
-              {parentCategory && onBackToCategory && (
+              {subCategory.categoryId && onBackToCategory && (
                 <button
                   onClick={handleBackToCategory}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to {parentCategory.key}
+                  Back to {subCategory.categoryId.key}
                 </button>
               )}
             </div>

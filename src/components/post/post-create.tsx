@@ -34,7 +34,7 @@ interface PostFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   postId?: string;
-  initialData?: PostDetail;
+  initialData?: PostDetail | null;
   onSuccess?: (post: PostDetail) => void;
 }
 
@@ -344,7 +344,7 @@ export default function PostFormModal({
           {/* Modal content */}
           <div className="relative z-10 flex flex-col w-full max-w-6xl max-h-[90vh] mx-4 bg-white rounded-2xl shadow-2xl">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-primary/10 bg-primary/10">
+            <div className="flex items-center justify-between px-6 py-2 border-b border-primary/10 bg-primary/10">
               <h2 className="text-xl font-semibold text-primary">
                 {isEditMode ? "Edit Post" : "Create New Post"}
               </h2>
@@ -565,7 +565,7 @@ export default function PostFormModal({
                       onChange={onChangeField}
                       className="w-full rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-primary placeholder:text-primary/40 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
                     />
-                    {post.coverUrl && (
+                    {post.coverUrl && post.coverUrl.startsWith("http") && (
                       <div className="mt-3 border border-primary/15 rounded-lg p-2">
                         <Image
                           src={post.coverUrl || "/placeholder.svg"}
@@ -609,7 +609,7 @@ export default function PostFormModal({
             </div>
 
             {/* Footer Actions */}
-            <div className="bg-white border-t border-primary/10 px-6 py-4">
+            <div className="bg-white border-t border-primary/10 px-6 py-2">
               <div className="flex justify-between items-center">
                 <div className="flex gap-3">
                   <button
