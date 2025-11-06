@@ -48,7 +48,7 @@ export default function LoginPage() {
         });
 
         // Use window.location.replace for immediate navigation
-        window.location.replace("/posts");
+        window.location.replace("/posts/all-posts");
         return; // Exit early to prevent setIsLoading(false)
       } else {
         setError(
