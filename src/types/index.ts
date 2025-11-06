@@ -39,6 +39,7 @@ export interface Post {
   tags: string[];
   metaDescription: string;
   excerpt: string;
+  keyPhrases: string[];
   coverUrl?: string;
   status: POST_STATUS;
   slug?: string; // Thêm slug cho Post creation
@@ -66,6 +67,7 @@ export interface PostDetail {
   coverUrl?: string;
   status: POST_STATUS;
   slug: string;
+  keyPhrases: string[];
   createdAt: string;
   updatedAt: string;
   publishTime: string;

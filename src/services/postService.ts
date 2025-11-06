@@ -1,5 +1,5 @@
 import { Post, PostDetail } from "@/types";
-import { post, get, del, patch } from "./api";
+import { post, get, del, patch, upload } from "./api";
 
 export interface PostListParams {
   page: number;
@@ -22,6 +22,16 @@ export interface PostListResponse {
     totalItems: number;
     totalPages: number;
   };
+}
+
+export interface UploadResponse {
+  url: string;
+  publicId: string;
+  secureUrl?: string;
+  format?: string;
+  width?: number;
+  height?: number;
+  bytes?: number;
 }
 
 export const postService = {
@@ -77,6 +87,11 @@ export const postService = {
   // Helper method to get post by _id or id
   getPost: (idOrObjectId: string) => {
     return postService.getPostDetail(idOrObjectId);
+  },
+
+  // Upload image to Cloudinary
+  uploadImage: (file: File, folder?: string) => {
+    return upload<UploadResponse>("/content-management/upload", file, folder);
   },
 };
 

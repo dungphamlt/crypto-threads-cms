@@ -11,7 +11,6 @@ import {
   EditOutlined,
   EyeOutlined,
   CalendarOutlined,
-  UserOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   EditOutlined as DraftOutlined,
@@ -299,28 +298,6 @@ function PostTableLayout() {
 
   // Define columns
   const columns: ProColumns<PostDetail>[] = [
-    // Cover Image
-    {
-      title: "Cover",
-      key: "cover",
-      width: 100,
-      render: (_, record) => (
-        <div className="flex justify-center">
-          <Image
-            width={60}
-            height={45}
-            src={getSafeImageUrl(record.coverUrl, "small")}
-            alt={record.title}
-            className="rounded-sm object-cover shadow-[0_0_3px_1px_rgba(0,0,0,0.2)]"
-            placeholder={
-              <div className="w-15 h-11 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-xs text-gray-400">No Image</span>
-              </div>
-            }
-          />
-        </div>
-      ),
-    },
     // Title
     {
       title: "Title",
@@ -352,7 +329,7 @@ function PostTableLayout() {
       width: 200,
       render: (excerpt) => (
         <div
-          className="text-sm text-gray-600 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+          className="text-sm overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -372,7 +349,7 @@ function PostTableLayout() {
       width: 200,
       render: (metaDescription) => (
         <div
-          className="text-sm text-gray-500 overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+          className="text-sm overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 2,
@@ -418,7 +395,7 @@ function PostTableLayout() {
       title: "Category",
       dataIndex: "category",
       key: "category",
-      width: 120,
+      width: 150,
       render: (category, record) => {
         // Helper function to get category name
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -527,15 +504,14 @@ function PostTableLayout() {
     },
     // Stats
     {
-      title: "Stats",
-      key: "stats",
+      title: "Total Views",
+      key: "views",
       width: 100,
       render: (_, record) => (
         <div className="text-xs space-y-1">
-          <div className="flex items-center text-gray-600">
+          <div className="flex justify-center items-center text-gray-600">
             <span>👁️ {String(record.views || 0)}</span>
           </div>
-          <div className="text-gray-500">ID: {String(record.id).slice(-8)}</div>
         </div>
       ),
     },
@@ -615,27 +591,21 @@ function PostTableLayout() {
       filters.endDate;
 
     return (
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 mb-4">
+      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 mb-4">
         <div className="px-6 py-4">
           {/* Filter Controls */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Category Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <span className="w-3 h-3 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                </span>
-                Category
-              </label>
               <div className="relative">
                 <select
                   value={filters.category || ""}
                   onChange={(e) =>
                     handleFilterChange("category", e.target.value)
                   }
-                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
-                  <option value="">Select category</option>
+                  <option value="">All category</option>
                   {categories.map((cat: { id: string; key: string }) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.key}
@@ -670,12 +640,6 @@ function PostTableLayout() {
 
             {/* Sub-Category Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <span className="w-3 h-3 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-                </span>
-                Sub-Category
-              </label>
               <div className="relative">
                 <select
                   value={filters.subCategory || ""}
@@ -683,13 +647,9 @@ function PostTableLayout() {
                     handleFilterChange("subCategory", e.target.value)
                   }
                   disabled={!filters.category}
-                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white disabled:opacity-50"
+                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white disabled:opacity-50"
                 >
-                  <option value="">
-                    {!filters.category
-                      ? "Select category first"
-                      : "Select sub-category"}
-                  </option>
+                  <option value="">All sub-category</option>
                   {subCategories.map((subcat: SubCategory) => {
                     if (subcat.categoryId?.id !== filters.category) {
                       return null;
@@ -729,19 +689,15 @@ function PostTableLayout() {
 
             {/* Creator Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <UserOutlined className="text-slate-400" />
-                Creator
-              </label>
               <div className="relative">
                 <select
                   value={filters.creator || ""}
                   onChange={(e) =>
                     handleFilterChange("creator", e.target.value)
                   }
-                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
-                  <option value="">Select creator</option>
+                  <option value="">All creator</option>
                   <option value="admin">Admin</option>
                   <option value="editor">Editor</option>
                   <option value="author">Author</option>
@@ -774,18 +730,15 @@ function PostTableLayout() {
             </div>
             {/* Start Date */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <CalendarOutlined className="text-slate-400" />
-                Start Date
-              </label>
               <div className="relative">
                 <input
                   type="date"
                   value={filters.startDate}
+                  placeholder="All date"
                   onChange={(e) =>
                     handleFilterChange("startDate", e.target.value)
                   }
-                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
+                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
                 />
                 {filters.startDate && (
                   <button
@@ -797,26 +750,39 @@ function PostTableLayout() {
                 )}
               </div>
             </div>
-
-            {/* End Date */}
+            {/* Status Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <CalendarOutlined className="text-slate-400" />
-                End Date
-              </label>
               <div className="relative">
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) =>
-                    handleFilterChange("endDate", e.target.value)
-                  }
-                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
-                />
-                {filters.endDate && (
+                <select
+                  value={filters.status || ""}
+                  onChange={(e) => handleFilterChange("status", e.target.value)}
+                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                >
+                  <option value="">Select status</option>
+                  <option value={POST_STATUS.DRAFT}>Draft</option>
+                  <option value={POST_STATUS.PUBLISHED}>Published</option>
+                  <option value={POST_STATUS.TRASH}>Trash</option>
+                  <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
+                </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                {filters.status && (
                   <button
-                    onClick={() => handleFilterChange("endDate", "")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    onClick={() => handleFilterChange("status", "")}
+                    className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <CloseOutlined />
                   </button>
@@ -827,10 +793,6 @@ function PostTableLayout() {
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search Input */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <SearchOutlined className="text-slate-400" />
-                Search Content
-              </label>
               <div className="relative">
                 <input
                   type="text"
@@ -838,7 +800,7 @@ function PostTableLayout() {
                   value={filters.title}
                   onChange={(e) => handleFilterChange("title", e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full h-10 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
+                  className="w-full h-10 pl-10 pr-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
                 />
                 <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                 {filters.title && (
@@ -852,56 +814,11 @@ function PostTableLayout() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Status Select */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <CheckCircleOutlined className="text-green-500 text-xs" />
-                  Status
-                </label>
-                <div className="relative">
-                  <select
-                    value={filters.status || ""}
-                    onChange={(e) =>
-                      handleFilterChange("status", e.target.value)
-                    }
-                    className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
-                  >
-                    <option value="">Select status</option>
-                    <option value={POST_STATUS.DRAFT}>Draft</option>
-                    <option value={POST_STATUS.PUBLISHED}>Published</option>
-                    <option value={POST_STATUS.TRASH}>Trash</option>
-                    <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
-                  </select>
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg
-                      className="w-4 h-4 text-slate-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                  {filters.status && (
-                    <button
-                      onClick={() => handleFilterChange("status", "")}
-                      className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      <CloseOutlined />
-                    </button>
-                  )}
-                </div>
-              </div>
               {/* Action Buttons */}
               <div className="flex gap-2 items-end">
                 <button
                   onClick={applyFilters}
-                  className="flex-1 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <SearchOutlined />
                   Search
@@ -909,7 +826,7 @@ function PostTableLayout() {
                 <button
                   onClick={clearFilters}
                   disabled={!hasActiveFilters}
-                  className="h-10 px-4 border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-10 px-4 border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-700 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ClearOutlined />
                   Clear
@@ -933,6 +850,7 @@ function PostTableLayout() {
           request={fetchPosts}
           rowKey="id"
           loading={loading}
+          className="post-table-layout"
           pagination={{
             defaultPageSize: 10,
             showSizeChanger: true,
@@ -941,20 +859,19 @@ function PostTableLayout() {
               `Showing ${range[0]}-${range[1]} of ${total} posts`,
             pageSizeOptions: ["10", "20", "50", "100"],
             size: "default",
+            position: ["bottomCenter"],
           }}
           search={false}
-          options={{
-            setting: {
-              listsHeight: 400,
-            },
-            reload: true,
-            density: false,
-            fullScreen: true,
-          }}
+          options={false}
           scroll={{ x: 1400 }}
           dateFormatter="string"
           size="middle"
-          rowClassName="hover:shadow-sm transition-shadow duration-200"
+          rowClassName={(record, index) => {
+            const baseClass = "hover:shadow-sm transition-shadow duration-200";
+            const oddRowClass =
+              index !== undefined && index % 2 === 1 ? "bg-slate-50/50" : "";
+            return `${baseClass} ${oddRowClass}`.trim();
+          }}
         />
 
         {/* View Post Modal */}

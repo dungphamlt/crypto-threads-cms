@@ -349,9 +349,10 @@ PostDetailModalProps) {
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.6, duration: 0.4 }}
-                      className="prose prose-lg max-w-none"
+                      className="prose prose-lg max-w-none prose-img:rounded-lg prose-img:w-full prose-img:object-cover"
                     >
                       <div
+                        className="post-content"
                         dangerouslySetInnerHTML={{ __html: post.content || "" }}
                       />
                     </motion.div>

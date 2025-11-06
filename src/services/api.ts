@@ -119,3 +119,27 @@ export async function del<T>(endpoint: string): Promise<ApiResponse<T>> {
     return handleError<T>(error as AxiosError);
   }
 }
+
+export async function upload<T>(
+  endpoint: string,
+  file: File,
+  folder?: string
+): Promise<ApiResponse<T>> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (folder) {
+      formData.append("folder", folder);
+    }
+
+    const response = await axiosClient.post<T>(endpoint, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return handleResponse<T>(response);
+  } catch (error) {
+    return handleError<T>(error as AxiosError);
+  }
+}

@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Pagination, Empty } from "antd";
-import {
-  SearchOutlined,
-  ClearOutlined,
-  UserOutlined,
-  CheckCircleOutlined,
-  CalendarOutlined,
-} from "@ant-design/icons";
+import { SearchOutlined, ClearOutlined } from "@ant-design/icons";
 import { type PostDetail, postService } from "@/services/postService";
 import PostCard from "@/components/post/post-card";
 import toast from "react-hot-toast";
@@ -103,7 +97,7 @@ function PostGridLayout() {
   useEffect(() => {
     fetchPosts(pagination.current, pagination.pageSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchPosts]);
+  }, [fetchPosts, pagination.current, pagination.pageSize]);
 
   // Optimized filter handlers
   const updateFilter = useCallback((key: keyof FilterState, value: string) => {
@@ -160,13 +154,6 @@ function PostGridLayout() {
     setIsViewModalOpen(true);
   }, []);
 
-  // Get paginated data
-  const getCurrentPageData = () => {
-    const startIndex = (pagination.current - 1) * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
-    return filteredData.slice(startIndex, endIndex);
-  };
-
   const renderFilterSection = () => {
     const hasActiveFilters = Object.values(filters).some(
       (value) => value !== ""
@@ -179,19 +166,13 @@ function PostGridLayout() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {/* Category Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <span className="w-3 h-3 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                </span>
-                Category
-              </label>
               <div className="relative">
                 <select
                   value={filters.category}
                   onChange={(e) => updateFilter("category", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
-                  <option value="">Select category</option>
+                  <option value="">All category</option>
                   <option value="technology">Technology</option>
                   <option value="crypto">Cryptocurrency</option>
                   <option value="blockchain">Blockchain</option>
@@ -228,19 +209,13 @@ function PostGridLayout() {
 
             {/* Sub-Category Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <span className="w-3 h-3 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-                </span>
-                Sub-Category
-              </label>
               <div className="relative">
                 <select
                   value={filters.subCategory}
                   onChange={(e) => updateFilter("subCategory", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
-                  <option value="">Select sub-category</option>
+                  <option value="">All sub-category</option>
                   <option value="bitcoin">Bitcoin</option>
                   <option value="ethereum">Ethereum</option>
                   <option value="defi">DeFi</option>
@@ -277,17 +252,13 @@ function PostGridLayout() {
 
             {/* Creator Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <UserOutlined className="text-slate-400" />
-                Creator
-              </label>
               <div className="relative">
                 <select
                   value={filters.creator}
                   onChange={(e) => updateFilter("creator", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
                 >
-                  <option value="">Select creator</option>
+                  <option value="">All creator</option>
                   <option value="admin">Admin</option>
                   <option value="editor">Editor</option>
                   <option value="author">Author</option>
@@ -321,14 +292,11 @@ function PostGridLayout() {
 
             {/* Start Date */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <CalendarOutlined className="text-slate-400" />
-                Start Date
-              </label>
               <div className="relative">
                 <input
                   type="date"
                   value={filters.startDate}
+                  placeholder="All date"
                   onChange={(e) => updateFilter("startDate", e.target.value)}
                   className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
                 />
@@ -342,24 +310,38 @@ function PostGridLayout() {
                 )}
               </div>
             </div>
-
-            {/* End Date */}
+            {/* Status Select */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <CalendarOutlined className="text-slate-400" />
-                End Date
-              </label>
               <div className="relative">
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => updateFilter("endDate", e.target.value)}
-                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
-                />
-                {filters.endDate && (
+                <select
+                  value={filters.status}
+                  onChange={(e) => updateFilter("status", e.target.value)}
+                  className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                >
+                  <option value="">All status</option>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg
+                    className="w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                {filters.status && (
                   <button
-                    onClick={() => updateFilter("endDate", "")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    onClick={() => updateFilter("status", "")}
+                    className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <ClearOutlined />
                   </button>
@@ -372,10 +354,6 @@ function PostGridLayout() {
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search Input */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <SearchOutlined className="text-slate-400" />
-                Search Content
-              </label>
               <div className="relative">
                 <input
                   type="text"
@@ -401,48 +379,6 @@ function PostGridLayout() {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Status Select */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <CheckCircleOutlined className="text-green-500 text-xs" />
-                  Status
-                </label>
-                <div className="relative">
-                  <select
-                    value={filters.status}
-                    onChange={(e) => updateFilter("status", e.target.value)}
-                    className="w-full h-10 px-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
-                  >
-                    <option value="">Select status</option>
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg
-                      className="w-4 h-4 text-slate-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                  {filters.status && (
-                    <button
-                      onClick={() => updateFilter("status", "")}
-                      className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      <ClearOutlined />
-                    </button>
-                  )}
-                </div>
-              </div>
               <div className="flex gap-2 items-end justify-end">
                 <button
                   onClick={handleSearch}
@@ -486,7 +422,7 @@ function PostGridLayout() {
           <Empty description="No posts found" className="py-16" />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {getCurrentPageData().map((post) => (
+            {filteredData.map((post) => (
               <PostCard
                 key={post.id}
                 initialPost={post}

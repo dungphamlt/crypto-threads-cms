@@ -214,3 +214,16 @@ button {
 .image__caption_highlighted {
   text-align: center;
 }
+
+/* Post Table Layout - Header styling */
+.post-table-layout thead th {
+  background-color: #f1f5f9 !important;
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9) !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+.post-table-layout thead th:hover {
+  background-color: #e2e8f0 !important;
+}

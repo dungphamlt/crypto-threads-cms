@@ -5,25 +5,25 @@ import { Plus, Grid3X3, List } from "lucide-react";
 import {
   PostGridLayout,
   PostTableLayout,
-  PostCreate,
+  // PostCreate,
   // PostViewDetail,
 } from "@/components/post";
-import type { PostDetail } from "@/services/postService";
-
+// import type { PostDetail } from "@/services/postService";
+import { useRouter } from "next/navigation";
 type ViewMode = "grid" | "table";
 
 function PostsManagement() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  // const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   // const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   // const [viewPostId, setViewPostId] = useState<string>("");
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleCreateSuccess = (post: PostDetail) => {
-    // Refresh the posts list
-    setRefreshKey((prev) => prev + 1);
-    console.log("Post created successfully:", post);
-  };
+  // const [refreshKey, setRefreshKey] = useState(0);
+  const router = useRouter();
+  // const handleCreateSuccess = (post: PostDetail) => {
+  //   // Refresh the posts list
+  //   setRefreshKey((prev) => prev + 1);
+  //   console.log("Post created successfully:", post);
+  // };
 
   // const handleEdit = (postId: string) => {
   //   setViewPostId(postId);
@@ -35,13 +35,13 @@ function PostsManagement() {
   //   setIsViewModalOpen(true);
   // };
 
-  const handleOpenCreateModal = () => {
-    setIsCreateModalOpen(true);
-  };
+  // const handleOpenCreateModal = () => {
+  //   setIsCreateModalOpen(true);
+  // };
 
-  const handleCloseCreateModal = () => {
-    setIsCreateModalOpen(false);
-  };
+  // const handleCloseCreateModal = () => {
+  //   setIsCreateModalOpen(false);
+  // };
 
   return (
     <div className="space-y-6">
@@ -52,7 +52,7 @@ function PostsManagement() {
         <div className="flex items-center gap-3">
           {/* Add New Post Button */}
           <button
-            onClick={handleOpenCreateModal}
+            onClick={() => router.push("/posts/create-post")}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
           >
             <Plus className="h-4 w-4" />
@@ -65,7 +65,7 @@ function PostsManagement() {
               onClick={() => setViewMode("grid")}
               className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 viewMode === "grid"
-                  ? "bg-white text-gray-900 shadow-sm"
+                  ? "bg-primary text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -76,7 +76,7 @@ function PostsManagement() {
               onClick={() => setViewMode("table")}
               className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 viewMode === "table"
-                  ? "bg-white text-gray-900 shadow-sm"
+                  ? "bg-primary text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -89,19 +89,15 @@ function PostsManagement() {
 
       {/* Content */}
       <div className="bg-transparent rounded-lg">
-        {viewMode === "table" ? (
-          <PostTableLayout key={`table-${refreshKey}`} />
-        ) : (
-          <PostGridLayout key={`grid-${refreshKey}`} />
-        )}
+        {viewMode === "table" ? <PostTableLayout /> : <PostGridLayout />}
       </div>
 
       {/* Create Post Modal */}
-      <PostCreate
+      {/* <PostCreate
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
         onSuccess={handleCreateSuccess}
-      />
+      /> */}
       {/* View Post Modal */}
       {/* <PostViewDetail
         postId={viewPostId}
