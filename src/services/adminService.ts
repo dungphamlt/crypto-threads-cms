@@ -52,7 +52,7 @@ export const adminService = {
     return get<Admin>(`/admin-aggregate/admins/${id}`);
   },
 
-  updateAuthor: (author: Author) => {
+  updateAuthor: (author: Partial<Author>) => {
     return patch<Author>(`/admin-aggregate/profile`, author);
   },
 

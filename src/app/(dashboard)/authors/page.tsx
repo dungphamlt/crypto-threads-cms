@@ -15,16 +15,24 @@ export interface AuthorDetail extends Author {
 
 export default function AuthorManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [authorToEdit, setAuthorToEdit] = useState<AuthorDetail | null>(null);
   const [isAuthorDetailModalOpen, setIsAuthorDetailModalOpen] = useState(false);
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorDetail | null>(
     null
   );
-  const handleAddAuthorSuccess = (newAuthor: Author) => {
+  const handleAuthorSuccess = (author: Author) => {
     setIsFormOpen(false);
-    toast.success("New author " + newAuthor.username + " added successfully!");
+    setAuthorToEdit(null);
+    refetch();
+    if (formMode === "create") {
+      toast.success(`New author ${author.username} added successfully!`);
+    } else {
+      toast.success(`Author ${author.username} updated successfully!`);
+    }
   };
 
-  const { data: dataAuthor } = useQuery({
+  const { data: dataAuthor, refetch } = useQuery({
     queryKey: ["author"],
     queryFn: () => adminService.getAuthorList(),
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -41,7 +49,22 @@ export default function AuthorManagement() {
 
   const handleOpenCreateModal = () => {
     setSelectedAuthor(null);
+    setAuthorToEdit(null);
+    setFormMode("create");
     setIsFormOpen(true);
+  };
+
+  const handleEditAuthor = (author: Author) => {
+    setIsAuthorDetailModalOpen(false);
+    setAuthorToEdit(author as AuthorDetail);
+    setFormMode("edit");
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setAuthorToEdit(null);
+    setFormMode("create");
   };
 
   return (
@@ -68,33 +91,28 @@ export default function AuthorManagement() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
 
         <div className="relative z-10">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            {/* Admin List */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold text-gray-800 flex items-center">
-                  <Users className="w-6 h-6 mr-2 text-blue-600" />
-                  Author List
-                </h3>
-                <div className="text-sm text-gray-500">
-                  {/* {filteredAdmins.length} of {adminList.length} admins */}
-                </div>
-              </div>
-
-              {/* Author Cards */}
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {authorList?.map((author) => (
-                  <AuthorCard
-                    key={author.email}
-                    author={author}
-                    onView={handleViewAuthor}
-                  />
-                ))}
+          {/* Admin List */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+                <Users className="w-6 h-6 mr-2 text-blue-600" />
+                Author List
+              </h3>
+              <div className="text-sm text-gray-500">
+                {/* {filteredAdmins.length} of {adminList.length} admins */}
               </div>
             </div>
 
-            {/* Author Details */}
-            <div className="space-y-6"></div>
+            {/* Author Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {authorList?.map((author) => (
+                <AuthorCard
+                  key={author.email}
+                  author={author}
+                  onView={handleViewAuthor}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Status Messages */}
@@ -102,14 +120,23 @@ export default function AuthorManagement() {
       </div>
       <FormAddNewAuthor
         open={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSuccess={handleAddAuthorSuccess}
-        onError={() => toast.error("Failed to add new author")}
+        mode={formMode}
+        initialAuthor={authorToEdit || undefined}
+        onClose={handleCloseForm}
+        onSuccess={handleAuthorSuccess}
+        onError={() =>
+          toast.error(
+            formMode === "create"
+              ? "Failed to add new author"
+              : "Failed to update author"
+          )
+        }
       />
       <AuthorDetailModal
         author={selectedAuthor}
         isOpen={isAuthorDetailModalOpen}
         onClose={() => setIsAuthorDetailModalOpen(false)}
+        onEdit={handleEditAuthor}
       />
     </div>
   );

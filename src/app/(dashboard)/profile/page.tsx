@@ -1,8 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Edit2, Link2, X, Save, Plus, Trash2, Key } from "lucide-react";
+import { useState, useCallback } from "react";
+import {
+  Edit2,
+  Link2,
+  X,
+  Save,
+  Plus,
+  Trash2,
+  Key,
+  UploadCloud,
+} from "lucide-react";
 import { adminService, Author } from "@/services/adminService";
+import { postService } from "@/services/postService";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import TelegramIcon from "@/assets/icon/telegram.svg";
@@ -47,6 +57,7 @@ export default function ProfilePage() {
     newPassword: "",
     confirmPassword: "",
   });
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const { profile, isLoading, refetch } = useAuth();
 
@@ -239,6 +250,50 @@ export default function ProfilePage() {
     setEditedProfile((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size must be less than 10MB");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    const toastId = toast.loading("Uploading avatar...");
+
+    try {
+      const response = await postService.uploadImage(file, "avatars");
+
+      if (response.success && response.data) {
+        const imageUrl = response.data.secureUrl || response.data.url;
+        setEditedProfile((prev) => ({ ...prev, avatarUrl: imageUrl }));
+        toast.success("Avatar uploaded successfully", { id: toastId });
+      } else {
+        toast.error(response.error || "Failed to upload avatar", {
+          id: toastId,
+        });
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload avatar", { id: toastId });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }, []);
+
+  const handleAvatarChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    },
+    [handleFileUpload]
+  );
+
   const getInitials = (name?: string) => {
     const displayName = name || profile?.username || profile?.email || "U";
     return displayName
@@ -424,35 +479,84 @@ export default function ProfilePage() {
           )
         )}
 
-        {/* Avatar URL */}
+        {/* Avatar Upload */}
         {isEditing && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Avatar URL
+              <UploadCloud className="inline h-3.5 w-3.5 mr-1" />
+              Avatar
             </label>
-            <input
-              type="url"
-              name="avatarUrl"
-              value={editedProfile.avatarUrl || ""}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="https://example.com/avatar.jpg"
-            />
-            {editedProfile.avatarUrl && (
-              <div className="mt-2 flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <Image
-                  src={editedProfile.avatarUrl}
-                  alt="Avatar preview"
-                  width={100}
-                  height={100}
-                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <label
+                  htmlFor="avatar-upload"
+                  className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${
+                    isUploadingAvatar
+                      ? "border-blue-300 bg-blue-50 cursor-not-allowed"
+                      : "border-gray-300 hover:border-blue-500 hover:bg-blue-50"
+                  }`}
+                >
+                  {isUploadingAvatar ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500" />
+                      <span className="text-sm text-gray-700">
+                        Uploading...
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="h-5 w-5 text-gray-600" />
+                      <span className="text-sm text-gray-700">
+                        Click to upload or drag and drop
+                      </span>
+                    </>
+                  )}
+                </label>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={isUploadingAvatar}
+                  className="hidden"
                 />
-                <span className="text-sm text-gray-600">Avatar preview</span>
+                {editedProfile.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditedProfile((prev) => ({ ...prev, avatarUrl: "" }))
+                    }
+                    disabled={isUploadingAvatar}
+                    className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
-            )}
+              {editedProfile.avatarUrl &&
+                editedProfile.avatarUrl.startsWith("http") && (
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Image
+                      src={editedProfile.avatarUrl}
+                      alt="Avatar preview"
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm text-gray-600">
+                        Avatar preview
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Supported formats: JPG, PNG, GIF (Max 10MB)
+                      </p>
+                    </div>
+                  </div>
+                )}
+            </div>
           </div>
         )}
         {/* Social Links Section */}

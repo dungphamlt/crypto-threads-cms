@@ -1,16 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { adminService, Author, AdminRole } from "@/services/adminService";
-import { X, PenTool, UserPlus, Plus, Trash2 } from "lucide-react";
+import { postService } from "@/services/postService";
+import { X, PenTool, UserPlus, Plus, Trash2, UploadCloud } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 
+type FormMode = "create" | "edit";
+
 interface FormAddNewAuthorProps {
   open: boolean;
+  mode?: FormMode;
+  initialAuthor?: Author | null;
   onClose: () => void;
   onSuccess: (author: Author) => void;
   onError?: () => void;
 }
+
+type AuthorFormState = Author & { password?: string };
 
 interface SocialEntry {
   key: string;
@@ -28,11 +35,15 @@ const SOCIAL_TYPE_OPTIONS = [
 
 const FormAddNewAuthor = ({
   open,
+  mode = "create",
+  initialAuthor,
   onClose,
   onSuccess,
   onError,
 }: FormAddNewAuthorProps) => {
-  const [author, setAuthor] = useState<Author>({
+  const isEditMode = mode === "edit" && !!initialAuthor;
+
+  const [author, setAuthor] = useState<AuthorFormState>({
     email: "",
     username: "",
     password: "",
@@ -44,6 +55,7 @@ const FormAddNewAuthor = ({
     role: AdminRole.WRITER,
   });
   const [loading, setLoading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Local state for input fields
   const [socials, setSocials] = useState<SocialEntry[]>([
@@ -53,7 +65,25 @@ const FormAddNewAuthor = ({
 
   // Reset form when opening
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+
+    if (isEditMode && initialAuthor) {
+      setAuthor({
+        ...initialAuthor,
+        password: "",
+      });
+
+      const transformedSocials = Object.entries(
+        initialAuthor.socials || {}
+      ).map(([key, value]) => ({ key, value }));
+
+      setSocials(
+        transformedSocials.length > 0
+          ? transformedSocials
+          : [{ key: "telegram", value: "" }]
+      );
+      setDesignationInput("");
+    } else {
       setAuthor({
         email: "",
         username: "",
@@ -68,7 +98,7 @@ const FormAddNewAuthor = ({
       setSocials([{ key: "telegram", value: "" }]);
       setDesignationInput("");
     }
-  }, [open]);
+  }, [open, isEditMode, initialAuthor]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -133,6 +163,50 @@ const FormAddNewAuthor = ({
     }
   };
 
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size must be less than 10MB");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    const toastId = toast.loading("Uploading avatar...");
+
+    try {
+      const response = await postService.uploadImage(file, "avatars");
+
+      if (response.success && response.data) {
+        const imageUrl = response.data.secureUrl || response.data.url;
+        setAuthor((prev) => ({ ...prev, avatarUrl: imageUrl }));
+        toast.success("Avatar uploaded successfully", { id: toastId });
+      } else {
+        toast.error(response.error || "Failed to upload avatar", {
+          id: toastId,
+        });
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload avatar", { id: toastId });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }, []);
+
+  const handleAvatarChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    },
+    [handleFileUpload]
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -146,25 +220,45 @@ const FormAddNewAuthor = ({
         return acc;
       }, {} as Record<string, string>);
 
-      const submitData = {
+      const submitData: AuthorFormState = {
         ...author,
         socials: socialsObject,
       };
 
-      // Create new author
-      const res = await adminService.createAuthor(submitData);
-      if (res.success) {
-        toast.success("New author added successfully!");
-      } else {
-        toast.error(res.message || "Failed to create new author");
-      }
+      if (isEditMode) {
+        const payload = { ...submitData } as Record<string, any>;
+        if (!payload.password) {
+          delete payload.password;
+        }
 
-      if (res.success) {
-        onSuccess(res.data as unknown as Author);
+        payload.email = initialAuthor?.email;
+
+        const res = await adminService.updateAuthor(payload);
+
+        if (res.success) {
+          toast.success("Author updated successfully!");
+          onSuccess(res.data as unknown as Author);
+        } else {
+          toast.error(res.message || "Failed to update author");
+        }
+      } else {
+        if (!submitData.password || submitData.password.trim().length < 6) {
+          toast.error("Password must be at least 6 characters long");
+          setLoading(false);
+          return;
+        }
+
+        const res = await adminService.createAuthor(submitData as Author);
+        if (res.success) {
+          toast.success("New author added successfully!");
+          onSuccess(res.data as unknown as Author);
+        } else {
+          toast.error(res.message || "Failed to create new author");
+        }
       }
     } catch (err) {
-      console.error("Error creating author:", err);
-      toast.error("An error occurred while creating the author");
+      console.error("Error saving author:", err);
+      toast.error("An error occurred while saving the author");
       if (onError) onError();
     } finally {
       setLoading(false);
@@ -214,7 +308,7 @@ const FormAddNewAuthor = ({
               </motion.div>
               <h2 className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
                 <UserPlus className="w-6 h-6 text-purple-500" />
-                Add New Author
+                {isEditMode ? "Edit Author" : "Add New Author"}
               </h2>
             </div>
 
@@ -234,6 +328,7 @@ const FormAddNewAuthor = ({
                     onChange={handleChange}
                     required
                     autoComplete="email"
+                    disabled={isEditMode}
                   />
                 </div>
 
@@ -253,6 +348,24 @@ const FormAddNewAuthor = ({
                 </div>
               </div>
 
+              {!isEditMode && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
+                    Password *
+                  </label>
+                  <input
+                    className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm"
+                    placeholder="Enter password"
+                    type="password"
+                    name="password"
+                    value={author.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                  />
+                </div>
+              )}
+
               {/* Pen Name */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center">
@@ -267,37 +380,82 @@ const FormAddNewAuthor = ({
                 />
               </div>
 
-              {/* Avatar URL */}
+              {/* Avatar Upload */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center">
-                  Avatar URL
+                  <UploadCloud className="inline h-3.5 w-3.5 mr-1" />
+                  Avatar
                 </label>
-                <input
-                  className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm"
-                  placeholder="https://example.com/avatar.jpg"
-                  type="url"
-                  name="avatarUrl"
-                  value={author.avatarUrl}
-                  onChange={handleChange}
-                />
-
-                {author.avatarUrl && (
-                  <div className="mt-2 flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <Image
-                      src={author.avatarUrl}
-                      alt="Avatar preview"
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <label
+                      htmlFor="avatar-upload"
+                      className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl transition-colors ${
+                        isUploadingAvatar
+                          ? "border-purple-300 bg-purple-50 cursor-not-allowed"
+                          : "border-gray-300 hover:border-purple-500 hover:bg-purple-50"
+                      }`}
+                    >
+                      {isUploadingAvatar ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-500" />
+                          <span className="text-sm text-gray-700">
+                            Uploading...
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="h-5 w-5 text-gray-600" />
+                          <span className="text-sm text-gray-700">
+                            Click to upload or drag and drop
+                          </span>
+                        </>
+                      )}
+                    </label>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      disabled={isUploadingAvatar}
+                      className="hidden"
                     />
-                    <span className="text-sm text-gray-600">
-                      Avatar preview
-                    </span>
+                    {author.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAuthor((prev) => ({ ...prev, avatarUrl: "" }))
+                        }
+                        disabled={isUploadingAvatar}
+                        className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                )}
+                  {author.avatarUrl && author.avatarUrl.startsWith("http") && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <Image
+                        src={author.avatarUrl}
+                        alt="Avatar preview"
+                        width={64}
+                        height={64}
+                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm text-gray-600">
+                          Avatar preview
+                        </span>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Supported formats: JPG, PNG, GIF (Max 10MB)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Description */}
@@ -306,7 +464,7 @@ const FormAddNewAuthor = ({
                   Description
                 </label>
                 <textarea
-                  className="w-full text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm resize-none"
+                  className="w-full h-auto text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm resize-none"
                   placeholder="Tell us about this author..."
                   name="description"
                   rows={3}
@@ -447,6 +605,7 @@ const FormAddNewAuthor = ({
                     loading ||
                     !author.username ||
                     !author.email ||
+                    (!isEditMode && !author.password) ||
                     !author.penName
                   }
                 >
@@ -477,7 +636,7 @@ const FormAddNewAuthor = ({
                   ) : (
                     <span className="flex items-center">
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Create Author
+                      {isEditMode ? "Save Changes" : "Create Author"}
                     </span>
                   )}
                 </button>
