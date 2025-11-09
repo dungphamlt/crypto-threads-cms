@@ -1,11 +1,11 @@
-import { Author } from "@/services/adminService";
+import { AuthorResponseDto } from "@/services/adminService";
 import { Calendar, Mail, Shield } from "lucide-react";
 import React from "react";
 import Image from "next/image";
 
 interface AuthorCardProps {
-  author: Author;
-  onView?: (author: Author) => void;
+  author: AuthorResponseDto;
+  onView?: (author: AuthorResponseDto) => void;
 }
 
 const AuthorCard: React.FC<AuthorCardProps> = ({ author, onView }) => {
@@ -49,7 +49,14 @@ const AuthorCard: React.FC<AuthorCardProps> = ({ author, onView }) => {
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              <span>Joined recently</span>
+              <span>
+                Joined{" "}
+                {new Date(author.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                })}
+              </span>
             </div>
           </div>
         </div>

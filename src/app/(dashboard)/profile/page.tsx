@@ -11,7 +11,7 @@ import {
   Key,
   UploadCloud,
 } from "lucide-react";
-import { adminService, Author } from "@/services/adminService";
+import { adminService, AuthorResponseDto } from "@/services/adminService";
 import { postService } from "@/services/postService";
 import toast from "react-hot-toast";
 import Image from "next/image";
@@ -47,7 +47,9 @@ const SOCIAL_TYPE_OPTIONS = [
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedProfile, setEditedProfile] = useState<Partial<Author>>({});
+  const [editedProfile, setEditedProfile] = useState<
+    Partial<AuthorResponseDto>
+  >({});
   const [socials, setSocials] = useState<Record<string, string>>({});
   const [designations, setDesignations] = useState<string[]>([]);
   const [designationInput, setDesignationInput] = useState("");
@@ -121,8 +123,8 @@ export default function ProfilePage() {
         designations: designations,
       };
 
-      const response = await adminService.updateAuthor(
-        updateData as unknown as Author
+      const response = await adminService.updateProfile(
+        updateData as unknown as AuthorResponseDto
       );
       if (response.success) {
         toast.success("Profile updated successfully!");

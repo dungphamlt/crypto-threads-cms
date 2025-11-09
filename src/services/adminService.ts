@@ -14,16 +14,17 @@ export interface Admin {
   _id: string;
   email: string;
   username: string;
-  password: string;
   penName: string;
   socials: Record<string, string>;
   avatarUrl: string;
   description: string;
   designations: string[];
   role: AdminRole;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface Author {
+export interface AuthorCreateDto {
   email: string;
   username: string;
   password: string;
@@ -35,25 +36,47 @@ export interface Author {
   role: AdminRole.WRITER;
 }
 
+export interface AuthorResponseDto {
+  _id: string;
+  email: string;
+  username: string;
+  password: string;
+  penName: string;
+  socials: Record<string, string>;
+  avatarUrl: string;
+  description: string;
+  designations: string[];
+  role: AdminRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const adminService = {
   getProfile: () => {
     return get<Admin>("/admin-aggregate/profile");
   },
 
-  createAuthor: (author: Author) => {
-    return post<Author>("/admin-aggregate/create-admin", author);
+  createAuthor: (author: AuthorCreateDto) => {
+    return post<AuthorResponseDto>("/admin-aggregate/create-admin", author);
   },
 
   getAuthorList: () => {
-    return get<Author[]>("admin-aggregate/admins");
+    return get<AuthorResponseDto[]>("admin-aggregate/admins");
   },
 
   getAdminDetail: (id: number) => {
     return get<Admin>(`/admin-aggregate/admins/${id}`);
   },
 
-  updateAuthor: (author: Partial<Author>) => {
-    return patch<Author>(`/admin-aggregate/profile`, author);
+  updateProfile: (author: Partial<Admin>) => {
+    return patch<Admin>(`/admin-aggregate/profile`, author);
+  },
+
+  updateAuthor: (author: AuthorResponseDto) => {
+    return patch<AuthorCreateDto>(
+      `/admin-aggregate/admins/${author._id}`,
+      author
+    );
   },
 
   updatePassword: (passwordData: {

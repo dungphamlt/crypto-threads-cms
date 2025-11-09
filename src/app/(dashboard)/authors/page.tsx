@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import { Users, Plus } from "lucide-react";
-import { AdminRole, adminService, Author } from "@/services/adminService";
+import {
+  AdminRole,
+  adminService,
+  AuthorResponseDto,
+} from "@/services/adminService";
 import FormAddNewAuthor from "@/components/author/author-form";
 // import AdminCard from "@/components/admin/AdminCard";
 import toast from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 import AuthorCard from "@/components/author/author-card";
 import AuthorDetailModal from "@/components/author/author-detail";
-export interface AuthorDetail extends Author {
+export interface AuthorDetail extends AuthorResponseDto {
   _id: string;
 }
 
@@ -21,15 +25,11 @@ export default function AuthorManagement() {
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorDetail | null>(
     null
   );
-  const handleAuthorSuccess = (author: Author) => {
+  const handleAuthorSuccess = (author: AuthorResponseDto) => {
     setIsFormOpen(false);
     setAuthorToEdit(null);
     refetch();
-    if (formMode === "create") {
-      toast.success(`New author ${author.username} added successfully!`);
-    } else {
-      toast.success(`Author ${author.username} updated successfully!`);
-    }
+    console.log(author);
   };
 
   const { data: dataAuthor, refetch } = useQuery({
@@ -42,7 +42,7 @@ export default function AuthorManagement() {
       []
     : [];
 
-  const handleViewAuthor = (author: Author) => {
+  const handleViewAuthor = (author: AuthorResponseDto) => {
     setSelectedAuthor(author as AuthorDetail);
     setIsAuthorDetailModalOpen(true);
   };
@@ -54,7 +54,7 @@ export default function AuthorManagement() {
     setIsFormOpen(true);
   };
 
-  const handleEditAuthor = (author: Author) => {
+  const handleEditAuthor = (author: AuthorResponseDto) => {
     setIsAuthorDetailModalOpen(false);
     setAuthorToEdit(author as AuthorDetail);
     setFormMode("edit");

@@ -1,8 +1,18 @@
+"use client";
+
+import type React from "react";
+
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { adminService, Author, AdminRole } from "@/services/adminService";
+import {
+  adminService,
+  type AuthorCreateDto,
+  type AuthorResponseDto,
+  AdminRole,
+} from "@/services/adminService";
 import { postService } from "@/services/postService";
-import { X, PenTool, UserPlus, Plus, Trash2, UploadCloud } from "lucide-react";
+import { X, UserPlus, Plus, Trash2, Camera } from "lucide-react";
+import Avatar from "@/assets/images/avatar.jpg";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 
@@ -11,13 +21,13 @@ type FormMode = "create" | "edit";
 interface FormAddNewAuthorProps {
   open: boolean;
   mode?: FormMode;
-  initialAuthor?: Author | null;
+  initialAuthor?: AuthorResponseDto | null;
   onClose: () => void;
-  onSuccess: (author: Author) => void;
+  onSuccess: (author: AuthorResponseDto) => void;
   onError?: () => void;
 }
 
-type AuthorFormState = Author & { password?: string };
+type AuthorFormState = AuthorCreateDto & { password?: string };
 
 interface SocialEntry {
   key: string;
@@ -68,10 +78,7 @@ const FormAddNewAuthor = ({
     if (!open) return;
 
     if (isEditMode && initialAuthor) {
-      setAuthor({
-        ...initialAuthor,
-        password: "",
-      });
+      setAuthor(initialAuthor as AuthorCreateDto);
 
       const transformedSocials = Object.entries(
         initialAuthor.socials || {}
@@ -105,7 +112,10 @@ const FormAddNewAuthor = ({
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    setAuthor((f: Author) => ({ ...f, [e.target.name]: e.target.value }));
+    setAuthor((f: AuthorCreateDto) => ({
+      ...f,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   // Handle social links management
@@ -226,18 +236,13 @@ const FormAddNewAuthor = ({
       };
 
       if (isEditMode) {
-        const payload = { ...submitData } as Record<string, any>;
-        if (!payload.password) {
-          delete payload.password;
-        }
-
-        payload.email = initialAuthor?.email;
-
-        const res = await adminService.updateAuthor(payload);
+        const res = await adminService.updateAuthor(
+          submitData as AuthorResponseDto
+        );
 
         if (res.success) {
           toast.success("Author updated successfully!");
-          onSuccess(res.data as unknown as Author);
+          onSuccess(res.data as unknown as AuthorResponseDto);
         } else {
           toast.error(res.message || "Failed to update author");
         }
@@ -248,10 +253,12 @@ const FormAddNewAuthor = ({
           return;
         }
 
-        const res = await adminService.createAuthor(submitData as Author);
+        const res = await adminService.createAuthor(
+          submitData as AuthorCreateDto
+        );
         if (res.success) {
           toast.success("New author added successfully!");
-          onSuccess(res.data as unknown as Author);
+          onSuccess(res.data as unknown as AuthorResponseDto);
         } else {
           toast.error(res.message || "Failed to create new author");
         }
@@ -282,7 +289,7 @@ const FormAddNewAuthor = ({
           onClick={handleClose}
         >
           <motion.div
-            className="relative bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto border border-gray-100"
+            className="relative bg-gradient-to-br from-white to-gray-50 p-8 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto border border-gray-100"
             initial={{ scale: 0.95, y: 20, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.95, y: 20, opacity: 0 }}
@@ -297,22 +304,89 @@ const FormAddNewAuthor = ({
               <X className="w-5 h-5 text-gray-500" />
             </button>
 
-            <div className="text-center mb-6">
-              <motion.div
-                className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl mb-4"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-              >
-                <PenTool className="w-8 h-8 text-white" />
-              </motion.div>
-              <h2 className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
-                <UserPlus className="w-6 h-6 text-purple-500" />
-                {isEditMode ? "Edit Author" : "Add New Author"}
-              </h2>
-            </div>
+            <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
+              {isEditMode ? "Edit Author" : "Add New Author"}
+            </h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <div className="flex justify-center py-4">
+                  <label
+                    htmlFor="avatar-upload"
+                    className="relative inline-flex items-center justify-center cursor-pointer group"
+                  >
+                    {/* Circular avatar with white border */}
+                    <div className="relative w-36 h-36">
+                      <div className="absolute inset-0 rounded-md ring-4 ring-white overflow-hidden flex items-center justify-center">
+                        {author.avatarUrl &&
+                        author.avatarUrl.startsWith("http") ? (
+                          <Image
+                            src={author.avatarUrl || Avatar.src}
+                            alt="Avatar preview"
+                            width={144}
+                            height={144}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center text-gray-400">
+                            <Image
+                              src={Avatar.src}
+                              alt="Avatar"
+                              width={144}
+                              height={144}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Camera icon button in bottom-right corner */}
+                      <div
+                        className={`absolute bottom-0 right-0 rounded-full p-2.5 transition-all ${
+                          isUploadingAvatar
+                            ? "bg-purple-400 cursor-not-allowed"
+                            : "bg-gray-800 hover:bg-purple-600 cursor-pointer group-hover:scale-110"
+                        }`}
+                      >
+                        {isUploadingAvatar ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                        ) : (
+                          <Camera className="w-5 h-5 text-white" />
+                        )}
+                      </div>
+                    </div>
+
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      disabled={isUploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Upload info and remove button */}
+                <div className="flex flex-col items-center gap-3">
+                  {author.avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAuthor((prev) => ({ ...prev, avatarUrl: "" }))
+                      }
+                      disabled={isUploadingAvatar}
+                      className="px-3 py-1 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Remove Avatar
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Email & Username Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -380,84 +454,6 @@ const FormAddNewAuthor = ({
                 />
               </div>
 
-              {/* Avatar Upload */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center">
-                  <UploadCloud className="inline h-3.5 w-3.5 mr-1" />
-                  Avatar
-                </label>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <label
-                      htmlFor="avatar-upload"
-                      className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-xl transition-colors ${
-                        isUploadingAvatar
-                          ? "border-purple-300 bg-purple-50 cursor-not-allowed"
-                          : "border-gray-300 hover:border-purple-500 hover:bg-purple-50"
-                      }`}
-                    >
-                      {isUploadingAvatar ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-500" />
-                          <span className="text-sm text-gray-700">
-                            Uploading...
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <UploadCloud className="h-5 w-5 text-gray-600" />
-                          <span className="text-sm text-gray-700">
-                            Click to upload or drag and drop
-                          </span>
-                        </>
-                      )}
-                    </label>
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarChange}
-                      disabled={isUploadingAvatar}
-                      className="hidden"
-                    />
-                    {author.avatarUrl && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setAuthor((prev) => ({ ...prev, avatarUrl: "" }))
-                        }
-                        disabled={isUploadingAvatar}
-                        className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-xl hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                  {author.avatarUrl && author.avatarUrl.startsWith("http") && (
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <Image
-                        src={author.avatarUrl}
-                        alt="Avatar preview"
-                        width={64}
-                        height={64}
-                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm text-gray-600">
-                          Avatar preview
-                        </span>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Supported formats: JPG, PNG, GIF (Max 10MB)
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Description */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center">
@@ -467,7 +463,7 @@ const FormAddNewAuthor = ({
                   className="w-full h-auto text-gray-900 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white/70 backdrop-blur-sm resize-none"
                   placeholder="Tell us about this author..."
                   name="description"
-                  rows={3}
+                  rows={5}
                   value={author.description}
                   onChange={handleChange}
                   maxLength={500}

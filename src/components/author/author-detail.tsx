@@ -1,13 +1,13 @@
 "use client";
 import { Mail, User, Award, Link2, X } from "lucide-react";
-import { Author } from "@/services/adminService";
+import { AuthorResponseDto } from "@/services/adminService";
 import Image from "next/image";
 
 interface AuthorDetailModalProps {
-  author: Author | null;
+  author: AuthorResponseDto | null;
   isOpen: boolean;
   onClose: () => void;
-  onEdit?: (author: Author) => void;
+  onEdit?: (author: AuthorResponseDto) => void;
 }
 
 export default function AuthorDetailModal({
@@ -32,7 +32,7 @@ export default function AuthorDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
           <h2 className="text-xl font-semibold text-gray-900">Author Detail</h2>
