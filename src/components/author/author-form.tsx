@@ -466,11 +466,11 @@ const FormAddNewAuthor = ({
                   rows={5}
                   value={author.description}
                   onChange={handleChange}
-                  maxLength={500}
+                  maxLength={1000}
                 />
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Professional background and expertise</span>
-                  <span>{author.description.length}/500</span>
+                  <span>{author.description.length}/1000</span>
                 </div>
               </div>
 
