@@ -87,7 +87,7 @@ export default function AuthorManagement() {
         </div>
       </div>
       {/* Main Content */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8 relative overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-indigo-500/5"></div>
 
         <div className="relative z-10">
@@ -104,7 +104,7 @@ export default function AuthorManagement() {
             </div>
 
             {/* Author Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {authorList?.map((author) => (
                 <AuthorCard
                   key={author.email}
