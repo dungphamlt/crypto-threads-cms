@@ -543,6 +543,27 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Seo score
+    {
+      title: "SEO Score",
+      dataIndex: "seoScore",
+      key: "seoScore",
+      width: 120,
+      render: (_, record) => (
+        <div className="space-y-1 ml-2">
+          <span
+            className={`font-medium px-2 py-1 rounded-md ${record.seoPoint >= 80
+                ? "bg-green-50 text-green-700"
+                : record.seoPoint >= 50
+                  ? "bg-yellow-50 text-yellow-700"
+                  : "bg-red-50 text-red-700"
+              }`}
+          >
+            {record.seoPoint ?? "N/A"}
+          </span>
+        </div>
+      ),
+    },
     // Actions
     {
       title: "Actions",
