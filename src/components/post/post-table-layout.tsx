@@ -18,6 +18,7 @@ import {
   SearchOutlined,
   ClearOutlined,
   CloseOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { type PostDetail, postService } from "@/services/postService";
@@ -27,6 +28,7 @@ import { toast } from "react-hot-toast";
 import PostViewDetail from "@/components/post/post-view-detail";
 import PostFormModal from "@/components/post/post-create";
 import DeletePostButton from "@/components/post/DeletePostButton";
+import PostQuickEdit from "@/components/post/post-quick-edit";
 import { getSafeImageUrl } from "@/utils/imageUtils";
 
 function PostTableLayout() {
@@ -36,6 +38,10 @@ function PostTableLayout() {
   // View Modal States
   const [viewPostId, setViewPostId] = useState<string>("");
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  // Quick Edit State
+  const [quickEditPostId, setQuickEditPostId] = useState<string | null>(null);
+  const [postsData, setPostsData] = useState<PostDetail[]>([]);
 
   // Edit Modal States
   const [editPost, setEditPost] = useState<PostDetail | null>(null);
@@ -107,6 +113,7 @@ function PostTableLayout() {
       });
 
       if (response.success && response.data?.data) {
+        setPostsData(response.data.data);
         return {
           data: response.data.data,
           success: true,
@@ -176,6 +183,20 @@ function PostTableLayout() {
   const handleDeleteSuccess = () => {
     // Reload current page to refresh the table
     actionRef.current?.reload();
+  };
+
+  // Handle quick edit
+  const handleQuickEdit = (postId: string) => {
+    setQuickEditPostId(postId);
+  };
+
+  const handleQuickEditSuccess = (updatedPost: PostDetail) => {
+    actionRef.current?.reload();
+    setQuickEditPostId(null);
+  };
+
+  const handleQuickEditCancel = () => {
+    setQuickEditPostId(null);
   };
 
   // Handle post success (create/edit)
@@ -448,11 +469,11 @@ function PostTableLayout() {
         return (
           <div className="space-y-1">
             <Tag color="blue" className="font-medium text-xs">
-              {getCategoryName(category)}
+              {getCategoryName(category).length > 10 ? `${getCategoryName(category).slice(0, 10)}...` : getCategoryName(category)}
             </Tag>
             {record.subCategory && (
               <Tag color="cyan" className="text-xs">
-                {getSubCategoryName(record.subCategory)}
+                {getSubCategoryName(record.subCategory).length > 10 ? `${getSubCategoryName(record.subCategory).slice(0, 10)}...` : getSubCategoryName(record.subCategory)}
               </Tag>
             )}
           </div>
@@ -553,10 +574,10 @@ function PostTableLayout() {
         <div className="space-y-1 ml-2">
           <span
             className={`font-medium px-2 py-1 rounded-md ${record.seoPoint >= 80
-                ? "bg-green-50 text-green-700"
-                : record.seoPoint >= 50
-                  ? "bg-yellow-50 text-yellow-700"
-                  : "bg-red-50 text-red-700"
+              ? "bg-green-50 text-green-700"
+              : record.seoPoint >= 50
+                ? "bg-yellow-50 text-yellow-700"
+                : "bg-red-50 text-red-700"
               }`}
           >
             {record.seoPoint ?? "N/A"}
@@ -582,11 +603,21 @@ function PostTableLayout() {
             />
           </Tooltip>
 
+          <Tooltip title="Quick Edit">
+            <Button
+              type="text"
+              size="small"
+              icon={<ThunderboltOutlined style={{ color: 'blue' }} />}
+              onClick={() => handleQuickEdit(record.id)}
+              className="hover:bg-purple-50 hover:text-purple-600"
+            />
+          </Tooltip>
+
           <Tooltip title="Edit Post">
             <Button
               type="text"
               size="small"
-              icon={<EditOutlined />}
+              icon={<EditOutlined style={{ color: '#faad14' }} />}
               onClick={() => handleEdit(record)}
               className="hover:bg-green-50 hover:text-green-600"
             />
@@ -838,10 +869,41 @@ function PostTableLayout() {
           dateFormatter="string"
           size="middle"
           rowClassName={(record, index) => {
+            // Ẩn row gốc khi đang quick edit
+            if (quickEditPostId === record.id) {
+              return "hidden";
+            }
             const baseClass = "hover:shadow-sm transition-shadow duration-200";
             const oddRowClass =
               index !== undefined && index % 2 === 1 ? "bg-slate-50/50" : "";
             return `${baseClass} ${oddRowClass}`.trim();
+          }}
+          expandable={{
+            expandedRowRender: (record) => {
+              if (quickEditPostId === record.id) {
+                return (
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg my-2">
+                    <PostQuickEdit
+                      post={record}
+                      onSuccess={handleQuickEditSuccess}
+                      onCancel={handleQuickEditCancel}
+                    />
+                  </div>
+                );
+              }
+              return null;
+            },
+            rowExpandable: (record) => quickEditPostId === record.id,
+            expandedRowKeys: quickEditPostId ? [quickEditPostId] : [],
+            onExpand: (expanded, record) => {
+              if (!expanded && quickEditPostId === record.id) {
+                setQuickEditPostId(null);
+              }
+            },
+            expandRowByClick: false,
+            indentSize: 0,
+            // Ẩn icon expand
+            showExpandColumn: false,
           }}
         />
 
@@ -856,6 +918,7 @@ function PostTableLayout() {
             }}
           // onEdit={handleEdit}
           // onDelete={handleDelete}
+
           />
         )}
 
