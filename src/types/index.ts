@@ -68,6 +68,7 @@ export interface PostDetail {
   status: POST_STATUS;
   slug: string;
   keyPhrases: string[];
+  seoPoint: number;
   createdAt: string;
   updatedAt: string;
   publishTime: string;

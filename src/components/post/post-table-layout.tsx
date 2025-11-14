@@ -18,6 +18,7 @@ import {
   SearchOutlined,
   ClearOutlined,
   CloseOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { type PostDetail, postService } from "@/services/postService";
@@ -27,6 +28,7 @@ import { toast } from "react-hot-toast";
 import PostViewDetail from "@/components/post/post-view-detail";
 import PostFormModal from "@/components/post/post-create";
 import DeletePostButton from "@/components/post/DeletePostButton";
+import PostQuickEdit from "@/components/post/post-quick-edit";
 import { getSafeImageUrl } from "@/utils/imageUtils";
 
 function PostTableLayout() {
@@ -36,6 +38,10 @@ function PostTableLayout() {
   // View Modal States
   const [viewPostId, setViewPostId] = useState<string>("");
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  // Quick Edit State
+  const [quickEditPostId, setQuickEditPostId] = useState<string | null>(null);
+  const [postsData, setPostsData] = useState<PostDetail[]>([]);
 
   // Edit Modal States
   const [editPost, setEditPost] = useState<PostDetail | null>(null);
@@ -107,6 +113,7 @@ function PostTableLayout() {
       });
 
       if (response.success && response.data?.data) {
+        setPostsData(response.data.data);
         return {
           data: response.data.data,
           success: true,
@@ -176,6 +183,20 @@ function PostTableLayout() {
   const handleDeleteSuccess = () => {
     // Reload current page to refresh the table
     actionRef.current?.reload();
+  };
+
+  // Handle quick edit
+  const handleQuickEdit = (postId: string) => {
+    setQuickEditPostId(postId);
+  };
+
+  const handleQuickEditSuccess = (updatedPost: PostDetail) => {
+    actionRef.current?.reload();
+    setQuickEditPostId(null);
+  };
+
+  const handleQuickEditCancel = () => {
+    setQuickEditPostId(null);
   };
 
   // Handle post success (create/edit)
@@ -283,7 +304,7 @@ function PostTableLayout() {
 
     return (
       <div
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border"
         style={{
           color: config.color,
           backgroundColor: config.bgColor,
@@ -322,31 +343,31 @@ function PostTableLayout() {
       ),
     },
     // Excerpt
-    {
-      title: "Excerpt",
-      dataIndex: "excerpt",
-      key: "excerpt",
-      width: 200,
-      render: (excerpt) => (
-        <div
-          className="text-sm overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-          style={{
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {excerpt || "No excerpt"}
-        </div>
-      ),
-    },
+    // {
+    //   title: "Excerpt",
+    //   dataIndex: "excerpt",
+    //   key: "excerpt",
+    //   width: 200,
+    //   render: (excerpt) => (
+    //     <div
+    //       className="text-sm overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+    //       style={{
+    //         display: "-webkit-box",
+    //         WebkitLineClamp: 2,
+    //         WebkitBoxOrient: "vertical",
+    //         overflow: "hidden",
+    //       }}
+    //     >
+    //       {excerpt || "No excerpt"}
+    //     </div>
+    //   ),
+    // },
     // Meta Description
     {
       title: "Meta Description",
       dataIndex: "metaDescription",
       key: "metaDescription",
-      width: 200,
+      width: 380,
       render: (metaDescription) => (
         <div
           className="text-sm overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
@@ -447,12 +468,12 @@ function PostTableLayout() {
 
         return (
           <div className="space-y-1">
-            <Tag color="blue" className="font-medium">
-              {getCategoryName(category)}
+            <Tag color="blue" className="font-medium text-xs">
+              {getCategoryName(category).length > 10 ? `${getCategoryName(category).slice(0, 10)}...` : getCategoryName(category)}
             </Tag>
             {record.subCategory && (
               <Tag color="cyan" className="text-xs">
-                {getSubCategoryName(record.subCategory)}
+                {getSubCategoryName(record.subCategory).length > 10 ? `${getSubCategoryName(record.subCategory).slice(0, 10)}...` : getSubCategoryName(record.subCategory)}
               </Tag>
             )}
           </div>
@@ -543,6 +564,27 @@ function PostTableLayout() {
         </div>
       ),
     },
+    // Seo score
+    {
+      title: "SEO Score",
+      dataIndex: "seoScore",
+      key: "seoScore",
+      width: 120,
+      render: (_, record) => (
+        <div className="space-y-1 ml-2">
+          <span
+            className={`font-medium px-2 py-1 rounded-md ${record.seoPoint >= 80
+              ? "bg-green-50 text-green-700"
+              : record.seoPoint >= 50
+                ? "bg-yellow-50 text-yellow-700"
+                : "bg-red-50 text-red-700"
+              }`}
+          >
+            {record.seoPoint ?? "N/A"}
+          </span>
+        </div>
+      ),
+    },
     // Actions
     {
       title: "Actions",
@@ -561,11 +603,21 @@ function PostTableLayout() {
             />
           </Tooltip>
 
+          <Tooltip title="Quick Edit">
+            <Button
+              type="text"
+              size="small"
+              icon={<ThunderboltOutlined style={{ color: 'blue' }} />}
+              onClick={() => handleQuickEdit(record.id)}
+              className="hover:bg-purple-50 hover:text-purple-600"
+            />
+          </Tooltip>
+
           <Tooltip title="Edit Post">
             <Button
               type="text"
               size="small"
-              icon={<EditOutlined />}
+              icon={<EditOutlined style={{ color: '#faad14' }} />}
               onClick={() => handleEdit(record)}
               className="hover:bg-green-50 hover:text-green-600"
             />
@@ -591,19 +643,18 @@ function PostTableLayout() {
       filters.endDate;
 
     return (
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50/30 border border-slate-200/60 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 mb-4">
-        <div className="px-6 py-4">
-          {/* Filter Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="bg-gradient-to-r from-slate-50 to-blue-50/20 border border-slate-200/50 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 mb-5">
+        {/* Increased padding for bigger frame */}
+        <div className="px-8 py-8">
+          {/* Filter Controls - fewer columns so each control is wider */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Category Select */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="relative">
                 <select
                   value={filters.category || ""}
-                  onChange={(e) =>
-                    handleFilterChange("category", e.target.value)
-                  }
-                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                  onChange={(e) => handleFilterChange("category", e.target.value)}
+                  className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white text-sm"
                 >
                   <option value="">All category</option>
                   {categories.map((cat: { id: string; key: string }) => (
@@ -613,18 +664,8 @@ function PostTableLayout() {
                   ))}
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
+                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
                 {filters.category && (
@@ -632,22 +673,20 @@ function PostTableLayout() {
                     onClick={() => handleFilterChange("category", "")}
                     className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <CloseOutlined />
+                    <CloseOutlined style={{ fontSize: 12 }} />
                   </button>
                 )}
               </div>
             </div>
 
             {/* Sub-Category Select */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="relative">
                 <select
                   value={filters.subCategory || ""}
-                  onChange={(e) =>
-                    handleFilterChange("subCategory", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange("subCategory", e.target.value)}
                   disabled={!filters.category}
-                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white disabled:opacity-50"
+                  className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white disabled:opacity-60 text-sm"
                 >
                   <option value="">All sub-category</option>
                   {subCategories.map((subcat: SubCategory) => {
@@ -662,18 +701,8 @@ function PostTableLayout() {
                   })}
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
+                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
                 {filters.subCategory && (
@@ -681,21 +710,19 @@ function PostTableLayout() {
                     onClick={() => handleFilterChange("subCategory", "")}
                     className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <CloseOutlined />
+                    <CloseOutlined style={{ fontSize: 12 }} />
                   </button>
                 )}
               </div>
             </div>
 
             {/* Creator Select */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="relative">
                 <select
                   value={filters.creator || ""}
-                  onChange={(e) =>
-                    handleFilterChange("creator", e.target.value)
-                  }
-                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
+                  onChange={(e) => handleFilterChange("creator", e.target.value)}
+                  className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white text-sm"
                 >
                   <option value="">All creator</option>
                   <option value="admin">Admin</option>
@@ -704,18 +731,8 @@ function PostTableLayout() {
                   <option value="guest">Guest Writer</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
+                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
                 {filters.creator && (
@@ -723,76 +740,57 @@ function PostTableLayout() {
                     onClick={() => handleFilterChange("creator", "")}
                     className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <CloseOutlined />
+                    <CloseOutlined style={{ fontSize: 12 }} />
                   </button>
                 )}
               </div>
             </div>
-            {/* Start Date */}
-            <div className="space-y-2">
-              <div className="relative">
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  placeholder="All date"
-                  onChange={(e) =>
-                    handleFilterChange("startDate", e.target.value)
-                  }
-                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
-                />
-                {filters.startDate && (
-                  <button
-                    onClick={() => handleFilterChange("startDate", "")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    <CloseOutlined />
-                  </button>
-                )}
-              </div>
-            </div>
-            {/* Status Select */}
-            <div className="space-y-2">
-              <div className="relative">
-                <select
-                  value={filters.status || ""}
-                  onChange={(e) => handleFilterChange("status", e.target.value)}
-                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
-                >
-                  <option value="">Select status</option>
-                  <option value={POST_STATUS.DRAFT}>Draft</option>
-                  <option value={POST_STATUS.PUBLISHED}>Published</option>
-                  <option value={POST_STATUS.TRASH}>Trash</option>
-                  <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
-                </select>
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+
+            {/* Status / Date group (we keep it in the same grid cell so layout remains neat) */}
+            <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={filters.startDate}
+                    placeholder="All date"
+                    onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors text-sm"
+                  />
+                  {filters.startDate && (
+                    <button
+                      onClick={() => handleFilterChange("startDate", "")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <CloseOutlined style={{ fontSize: 12 }} />
+                    </button>
+                  )}
                 </div>
-                {filters.status && (
-                  <button
-                    onClick={() => handleFilterChange("status", "")}
-                    className="absolute right-8 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                <div className="relative">
+                  <select
+                    value={filters.status || ""}
+                    onChange={(e) => handleFilterChange("status", e.target.value)}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white text-sm"
                   >
-                    <CloseOutlined />
-                  </button>
-                )}
+                    <option value="">Select status</option>
+                    <option value={POST_STATUS.DRAFT}>Draft</option>
+                    <option value={POST_STATUS.PUBLISHED}>Published</option>
+                    <option value={POST_STATUS.TRASH}>Trash</option>
+                    <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search Input */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="relative">
                 <input
                   type="text"
@@ -800,7 +798,7 @@ function PostTableLayout() {
                   value={filters.title}
                   onChange={(e) => handleFilterChange("title", e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full h-10 pl-10 pr-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
+                  className="w-full h-10 pl-10 pr-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors text-sm"
                 />
                 <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                 {filters.title && (
@@ -813,12 +811,13 @@ function PostTableLayout() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
               {/* Action Buttons */}
-              <div className="flex gap-2 items-end">
+              <div className="flex gap-3 items-end">
                 <button
                   onClick={applyFilters}
-                  className="flex-1 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-150 flex items-center justify-center gap-2"
                 >
                   <SearchOutlined />
                   Search
@@ -826,7 +825,7 @@ function PostTableLayout() {
                 <button
                   onClick={clearFilters}
                   disabled={!hasActiveFilters}
-                  className="h-10 px-4 border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-700 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-10 px-4 border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-700 rounded-md shadow-sm hover:shadow-md transition-all duration-150 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ClearOutlined />
                   Clear
@@ -838,6 +837,7 @@ function PostTableLayout() {
       </div>
     );
   };
+
 
   return (
     <ConfigProvider locale={enUS}>
@@ -851,6 +851,7 @@ function PostTableLayout() {
           rowKey="id"
           loading={loading}
           className="post-table-layout"
+          style={{ minHeight: "60vh" }}
           pagination={{
             defaultPageSize: 10,
             showSizeChanger: true,
@@ -863,14 +864,46 @@ function PostTableLayout() {
           }}
           search={false}
           options={false}
-          scroll={{ x: 1400 }}
+          // increase vertical scroll so the table appears bigger
+          scroll={{ x: 1400, y: 600 }}
           dateFormatter="string"
           size="middle"
           rowClassName={(record, index) => {
+            // Ẩn row gốc khi đang quick edit
+            if (quickEditPostId === record.id) {
+              return "hidden";
+            }
             const baseClass = "hover:shadow-sm transition-shadow duration-200";
             const oddRowClass =
               index !== undefined && index % 2 === 1 ? "bg-slate-50/50" : "";
             return `${baseClass} ${oddRowClass}`.trim();
+          }}
+          expandable={{
+            expandedRowRender: (record) => {
+              if (quickEditPostId === record.id) {
+                return (
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg my-2">
+                    <PostQuickEdit
+                      post={record}
+                      onSuccess={handleQuickEditSuccess}
+                      onCancel={handleQuickEditCancel}
+                    />
+                  </div>
+                );
+              }
+              return null;
+            },
+            rowExpandable: (record) => quickEditPostId === record.id,
+            expandedRowKeys: quickEditPostId ? [quickEditPostId] : [],
+            onExpand: (expanded, record) => {
+              if (!expanded && quickEditPostId === record.id) {
+                setQuickEditPostId(null);
+              }
+            },
+            expandRowByClick: false,
+            indentSize: 0,
+            // Ẩn icon expand
+            showExpandColumn: false,
           }}
         />
 
@@ -883,8 +916,9 @@ function PostTableLayout() {
               setIsViewModalOpen(false);
               setViewPostId("");
             }}
-            // onEdit={handleEdit}
-            // onDelete={handleDelete}
+          // onEdit={handleEdit}
+          // onDelete={handleDelete}
+
           />
         )}
 
