@@ -105,3 +105,13 @@ export interface SubCategory {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Tag {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  count?: number; // Số lượng bài viết sử dụng tag này
+  createdAt?: string;
+  updatedAt?: string;
+}

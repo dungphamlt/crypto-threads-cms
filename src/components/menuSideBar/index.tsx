@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   Palette,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -54,6 +55,11 @@ function MenuSideBar({ collapsed = false, onCloseMobile }: MenuSideBarProps) {
       name: "Categories",
       href: "/categories",
       icon: FolderClosed,
+    },
+    {
+      name: "Tags",
+      href: "/tags",
+      icon: Tag,
     },
     ...(isAdmin
       ? [{ name: "Author", href: "/authors", icon: UsersIcon }]

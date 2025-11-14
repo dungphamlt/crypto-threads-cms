@@ -7,6 +7,7 @@ import { PostDetail, POST_STATUS, Post } from "@/types";
 import toast from "react-hot-toast";
 import { useQuery } from "@tanstack/react-query";
 import { categoryService } from "@/services/categoryService";
+import TagInput from "../tag/tag-input";
 
 interface PostQuickEditProps {
   post: PostDetail;
@@ -29,7 +30,6 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
   const [tags, setTags] = useState<string[]>(
     Array.isArray(post.tags) ? post.tags : []
   );
-  const [tagInput, setTagInput] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>(
     typeof post.category === "object" ? post.category.id : post.category || ""
   );
@@ -68,7 +68,6 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
     setSlug(post.slug || "");
     setStatus(post.status);
     setTags(Array.isArray(post.tags) ? post.tags : []);
-    setTagInput("");
     setCategoryId(
       typeof post.category === "object" ? post.category.id : post.category || ""
     );
@@ -79,23 +78,8 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
     );
   }, [post]);
 
-  const addTag = () => {
-    const trimmedTag = tagInput.trim().toLowerCase();
-    if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
-      setTags((prev) => [...prev, trimmedTag]);
-      setTagInput("");
-    }
-  };
-
-  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addTag();
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
+  const handleTagsChange = (newTags: string[]) => {
+    setTags(newTags);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,7 +123,6 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
     setSlug(post.slug || "");
     setStatus(post.status);
     setTags(Array.isArray(post.tags) ? post.tags : []);
-    setTagInput("");
     setCategoryId(
       typeof post.category === "object" ? post.category.id : post.category || ""
     );
@@ -159,7 +142,7 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-4 gap-y-6 items-stretch">
-          {/* Column 1: Title (inline) + Slug (inline) */}
+          {/* Column 1: Title + Slug */}
           <div className="flex flex-col gap-3 h-full">
             {/* Title inline */}
             <div className="flex items-center gap-3">
@@ -190,7 +173,7 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
             </div>
           </div>
 
-          {/* Column 2: Category & SubCategory (inline selects, selects half width) */}
+          {/* Column 2: Category & SubCategory*/}
           <div className="flex flex-col gap-3 h-full">
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium text-gray-700 whitespace-nowrap w-28">
@@ -233,57 +216,19 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
             </div>
           </div>
 
-          {/* Column 3: Tags (inline label + input/button) + Status (inline) */}
+          {/* Column 3: Tags */}
           <div className="flex flex-col gap-3 h-full">
             <div className="flex items-start gap-3">
               <label className="text-sm font-medium text-gray-700 whitespace-nowrap w-28">
                 Tags:
               </label>
               <div className="flex-1">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleTagInputKeyDown}
-                    placeholder="Add tags (Enter or comma)"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                    disabled={tags.length >= 10}
-                  />
-                  <button
-                    type="button"
-                    onClick={addTag}
-                    disabled={!tagInput.trim() || tags.length >= 10}
-                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Add
-                  </button>
-                </div>
-
-                {/* tags list with max height */}
-                <div className="mt-2">
-                  {tags.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 max-h-28 overflow-auto p-1">
-                      {tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
-                        >
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeTag(tag)}
-                            className="hover:text-red-500 ml-1"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500">No tags added yet</p>
-                  )}
-                </div>
+                <TagInput
+                  tags={tags}
+                  onTagsChange={handleTagsChange}
+                  maxTags={10}
+                  placeholder="Add tags (press Enter or comma to add)"
+                />
               </div>
             </div>
 
