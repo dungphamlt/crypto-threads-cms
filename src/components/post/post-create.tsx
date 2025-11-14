@@ -24,6 +24,7 @@ import {
   Save,
   Clock,
 } from "lucide-react";
+import TagInput from "../tag/tag-input";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 const TITLE_LIMIT = 160;
@@ -47,7 +48,6 @@ export default function PostFormModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditMode] = useState(!!postId);
-  const [tagInput, setTagInput] = useState<string>("");
   const [keyPhraseInput, setKeyPhraseInput] = useState<string>("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isScheduleMode, setIsScheduleMode] = useState(false);
@@ -169,33 +169,8 @@ export default function PostFormModal({
     []
   );
 
-  const addTag = useCallback(() => {
-    const trimmedTag = tagInput.trim().toLowerCase();
-    if (
-      trimmedTag &&
-      !post.tags.includes(trimmedTag) &&
-      post.tags.length < 10
-    ) {
-      setPost((prev) => ({ ...prev, tags: [...prev.tags, trimmedTag] }));
-      setTagInput("");
-    }
-  }, [tagInput, post.tags]);
-
-  const handleTagInputKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" || e.key === ",") {
-        e.preventDefault();
-        addTag();
-      }
-    },
-    [addTag]
-  );
-
-  const removeTag = useCallback((tagToRemove: string) => {
-    setPost((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((tag) => tag !== tagToRemove),
-    }));
+  const handleTagsChange = useCallback((newTags: string[]) => {
+    setPost((prev) => ({ ...prev, tags: newTags }));
   }, []);
 
   const addKeyPhrase = useCallback(() => {
@@ -297,7 +272,6 @@ export default function PostFormModal({
         publishTime: "",
       });
     }
-    setTagInput("");
     setKeyPhraseInput("");
     setIsScheduleMode(false);
     setScheduleDate("");
@@ -481,7 +455,6 @@ export default function PostFormModal({
 
                   {/* Form Fields Grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Short Description */}
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-primary mb-2">
                         Short Description *
@@ -558,46 +531,12 @@ export default function PostFormModal({
                     <label className="block text-sm font-medium text-primary mb-2">
                       Tags (max 10)
                     </label>
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={tagInput}
-                          onChange={(e) => setTagInput(e.target.value)}
-                          onKeyDown={handleTagInputKeyDown}
-                          placeholder="Add tags (press Enter or comma to add)"
-                          className="flex-1 rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-primary placeholder:text-primary/40 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
-                          disabled={post.tags.length >= 10}
-                        />
-                        <button
-                          type="button"
-                          onClick={addTag}
-                          disabled={!tagInput.trim() || post.tags.length >= 10}
-                          className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Add
-                        </button>
-                      </div>
-                      {post.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {post.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-full"
-                            >
-                              {tag}
-                              <button
-                                type="button"
-                                onClick={() => removeTag(tag)}
-                                className="hover:text-red-500 ml-1"
-                              >
-                                ×
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <TagInput
+                      tags={post.tags}
+                      onTagsChange={handleTagsChange}
+                      maxTags={10}
+                      placeholder="Add tags (press Enter or comma to add)"
+                    />
                   </div>
                   {/* Cover Image */}
                   <div>
