@@ -20,6 +20,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import TagInput from "@/components/tag/tag-input";
 
 const TITLE_LIMIT = 160;
 const DESC_LIMIT = 380;
@@ -210,6 +211,10 @@ export default function CreatePostPage() {
     [handleFileUpload]
   );
 
+  const handleTagsChange = useCallback((newTags: string[]) => {
+    setPost((prev) => ({ ...prev, tags: newTags }));
+  }, []);
+
   const resetForm = useCallback(() => {
     setPost({
       title: "",
@@ -306,10 +311,9 @@ export default function CreatePostPage() {
 
     setIsSubmitting(true);
     const toastId = toast.loading(
-      `${
-        action === "saveDraft"
-          ? "Saving Draft"
-          : action === "schedule"
+      `${action === "saveDraft"
+        ? "Saving Draft"
+        : action === "schedule"
           ? "Scheduling"
           : "Publishing"
       } post...`
@@ -322,8 +326,8 @@ export default function CreatePostPage() {
           action === "publish"
             ? POST_STATUS.PUBLISHED
             : action === "schedule"
-            ? POST_STATUS.SCHEDULE
-            : POST_STATUS.DRAFT,
+              ? POST_STATUS.SCHEDULE
+              : POST_STATUS.DRAFT,
         ...(action === "schedule" && {
           scheduledAt: new Date(
             `${scheduleDate}T${scheduleTime}`
@@ -339,13 +343,12 @@ export default function CreatePostPage() {
 
       if (response.success && response.data?.id) {
         toast.success(
-          `Post ${
-            action === "saveDraft"
-              ? "draft saved"
-              : action === "schedule"
+          `Post ${action === "saveDraft"
+            ? "draft saved"
+            : action === "schedule"
               ? `scheduled for ${new Date(
-                  `${scheduleDate}T${scheduleTime}`
-                ).toLocaleString()}`
+                `${scheduleDate}T${scheduleTime}`
+              ).toLocaleString()}`
               : "published"
           } successfully`,
           { id: toastId }
@@ -360,10 +363,9 @@ export default function CreatePostPage() {
     } catch (error) {
       console.error("Submit error:", error);
       toast.error(
-        `An error occurred while ${
-          action === "saveDraft"
-            ? "saving draft"
-            : action === "schedule"
+        `An error occurred while ${action === "saveDraft"
+          ? "saving draft"
+          : action === "schedule"
             ? "scheduling"
             : "publishing"
         } the post`,
@@ -504,8 +506,8 @@ export default function CreatePostPage() {
                     {!post.category
                       ? "Select category first"
                       : subCategoriesLoading
-                      ? "Loading sub-categories..."
-                      : "Select a sub-category"}
+                        ? "Loading sub-categories..."
+                        : "Select a sub-category"}
                   </option>
                   {subCategories?.map((subcat: SubCategory) => (
                     <option key={subcat.id} value={subcat.id}>
@@ -519,46 +521,12 @@ export default function CreatePostPage() {
                 <label className="block text-sm font-medium text-primary mb-2">
                   Tags (max 10)
                 </label>
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={handleTagInputKeyDown}
-                      placeholder="Add tags (press Enter or comma to add)"
-                      className="flex-1 rounded-lg border border-primary/20 bg-white px-3 py-2 text-sm text-primary placeholder:text-primary/40 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/20"
-                      disabled={post.tags.length >= 10}
-                    />
-                    <button
-                      type="button"
-                      onClick={addTag}
-                      disabled={!tagInput.trim() || post.tags.length >= 10}
-                      className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Add
-                    </button>
-                  </div>
-                  {post.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {post.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-primary/10 text-primary rounded-full"
-                        >
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeTag(tag)}
-                            className="hover:text-red-500 ml-1"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <TagInput
+                  tags={post.tags}
+                  onTagsChange={handleTagsChange}
+                  maxTags={10}
+                  placeholder="Add tags (press Enter or comma to add)"
+                />
               </div>
             </div>
             {/* Cover Image */}
@@ -571,11 +539,10 @@ export default function CreatePostPage() {
                 <div className="flex items-center gap-3">
                   <label
                     htmlFor="cover-upload"
-                    className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${
-                      isUploadingCover
-                        ? "border-primary/30 bg-primary/5 cursor-not-allowed"
-                        : "border-primary/30 hover:border-primary/50 hover:bg-primary/5"
-                    }`}
+                    className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${isUploadingCover
+                      ? "border-primary/30 bg-primary/5 cursor-not-allowed"
+                      : "border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                      }`}
                   >
                     {isUploadingCover ? (
                       <>
@@ -750,11 +717,10 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("title");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
-                    activeSection === "title"
-                      ? "bg-primary text-white border border-primary"
-                      : "text-primary border border-primary/20 hover:bg-primary/5"
-                  }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "title"
+                    ? "bg-primary text-white border border-primary"
+                    : "text-primary border border-primary/20 hover:bg-primary/5"
+                    }`}
                 >
                   Title
                 </button>
@@ -764,11 +730,10 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("content");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
-                    activeSection === "content"
-                      ? "bg-primary text-white border border-primary"
-                      : "text-primary border border-primary/20 hover:bg-primary/5"
-                  }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "content"
+                    ? "bg-primary text-white border border-primary"
+                    : "text-primary border border-primary/20 hover:bg-primary/5"
+                    }`}
                 >
                   Content
                 </button>
@@ -778,11 +743,10 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("short-description");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
-                    activeSection === "short-description"
-                      ? "bg-primary text-white border border-primary"
-                      : "text-primary border border-primary/20 hover:bg-primary/5"
-                  }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "short-description"
+                    ? "bg-primary text-white border border-primary"
+                    : "text-primary border border-primary/20 hover:bg-primary/5"
+                    }`}
                 >
                   Short Description
                 </button>
@@ -792,11 +756,10 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("category");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
-                    activeSection === "category"
-                      ? "bg-primary text-white border border-primary"
-                      : "text-primary border border-primary/20 hover:bg-primary/5"
-                  }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "category"
+                    ? "bg-primary text-white border border-primary"
+                    : "text-primary border border-primary/20 hover:bg-primary/5"
+                    }`}
                 >
                   Category
                 </button>
@@ -806,11 +769,10 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("seo");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
-                    activeSection === "seo"
-                      ? "bg-primary text-white border border-primary"
-                      : "text-primary border border-primary/20 hover:bg-primary/5"
-                  }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "seo"
+                    ? "bg-primary text-white border border-primary"
+                    : "text-primary border border-primary/20 hover:bg-primary/5"
+                    }`}
                 >
                   SEO
                 </button>
@@ -820,11 +782,10 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("publishing-options");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
-                    activeSection === "publishing-options"
-                      ? "bg-primary text-white border border-primary"
-                      : "text-primary border border-primary/20 hover:bg-primary/5"
-                  }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "publishing-options"
+                    ? "bg-primary text-white border border-primary"
+                    : "text-primary border border-primary/20 hover:bg-primary/5"
+                    }`}
                 >
                   Publishing Options
                 </button>
