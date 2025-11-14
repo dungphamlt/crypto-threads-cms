@@ -68,7 +68,7 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
   const subCategories = subCategoriesResponse?.success
     ? subCategoriesResponse.data
     : [];
-  const posts = postsResponse?.success ? postsResponse.data : [];
+  const posts = postsResponse?.success ? postsResponse.data?.data : [];
 
   const loading = categoryLoading || subCategoriesLoading || postsLoading;
 
@@ -244,7 +244,10 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
                   </h3>
                 </div>
                 <Link
-                  href={`/posts?category=${category.id}`}
+                  href={{
+                    pathname: "/posts/all-posts",
+                    query: { category: category.id },
+                  }}
                   className="text-blue-600 hover:underline text-lg"
                 >
                   View All

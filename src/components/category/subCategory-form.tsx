@@ -149,6 +149,7 @@ const SubCategoryForm: React.FC<SubCategoryFormProps> = ({
       width={600}
       footer={null}
       className="subcategory-form-modal"
+      zIndex={30}
     >
       <div className="space-y-6">
         {/* Name Input */}

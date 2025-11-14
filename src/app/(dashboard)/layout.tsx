@@ -39,7 +39,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-10 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } ${sidebarCollapsed ? "lg:w-16" : "lg:w-64"}`}
         >

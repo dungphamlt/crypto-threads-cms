@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal } from "antd";
 import {
   Edit,
@@ -13,101 +13,81 @@ import {
   Loader2,
   ArrowLeft,
 } from "lucide-react";
-import { categoryService } from "@/services/categoryService";
 import { postService } from "@/services/postService";
 import { SubCategory, PostDetail } from "@/types";
 import Link from "next/link";
 
 interface SubCategoryViewDetailProps {
-  subCategoryId: string;
+  subCategory: SubCategory;
   isOpen: boolean;
   onClose: () => void;
-  onEdit?: (subCategoryId: string) => void;
+  onEdit?: (subCategory: SubCategory) => void;
   onDelete?: (subCategoryId: string) => void;
   onBackToCategory?: (categoryId: string) => void;
 }
 
 const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
-  subCategoryId,
+  subCategory,
   isOpen,
   onClose,
   onEdit,
   onDelete,
   onBackToCategory,
 }) => {
-  const [subCategory, setSubCategory] = useState<SubCategory | null>(null);
   const [posts, setPosts] = useState<PostDetail[]>([]);
-  const [loading, setLoading] = useState(false);
   const [postsLoading, setPostsLoading] = useState(false);
 
   const handleEdit = () => {
-    if (onEdit) {
-      onEdit(subCategoryId);
+    if (onEdit && subCategory) {
+      onEdit(subCategory);
     }
   };
 
   const handleDelete = () => {
-    if (onDelete) {
-      onDelete(subCategoryId);
+    if (onDelete && subCategory?.id) {
+      onDelete(subCategory.id);
     }
   };
 
   const handleBackToCategory = () => {
-    if (onBackToCategory && subCategoryId) {
-      onBackToCategory(subCategoryId);
+    const categoryId = subCategory?.categoryId?.id;
+    if (onBackToCategory && categoryId) {
+      onBackToCategory(categoryId);
     }
   };
 
   useEffect(() => {
-    if (isOpen && subCategoryId) {
-      setLoading(true);
-      setPostsLoading(true);
-      const fetchSubCategory = async () => {
-        try {
-          const response = await categoryService.getSubCategoryDetail(
-            subCategoryId
-          );
-          if (response.success && response.data) {
-            setSubCategory(response.data);
-          }
-        } catch (error) {
-          console.error("Failed to fetch sub-category:", error);
-          setSubCategory(null);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      const fetchPosts = async () => {
-        try {
-          const response = await postService.getPostsBySubCategory(
-            subCategoryId
-          );
-          if (response.success && response.data) {
-            setPosts(response.data.data);
-          } else {
-            setPosts([]);
-          }
-        } catch (error) {
-          console.error("Failed to fetch posts:", error);
-          setPosts([]);
-        } finally {
-          setPostsLoading(false);
-        }
-      };
-
-      fetchPosts();
-      fetchSubCategory();
+    if (!isOpen) {
+      setPostsLoading(false);
+      return;
     }
-  }, [isOpen, subCategoryId]);
+
+    const fetchPosts = async () => {
+      try {
+        const response = await postService.getPostsBySubCategory(
+          subCategory.id
+        );
+        if (response.success && response.data) {
+          setPosts(response.data.data);
+        } else {
+          setPosts([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch posts:", error);
+        setPosts([]);
+      } finally {
+        setPostsLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, [isOpen, subCategory]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      month: "2-digit",
+      day: "2-digit",
     });
   };
 
@@ -131,12 +111,9 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
       width={1000}
       footer={null}
       className="subcategory-view-modal"
+      zIndex={20}
     >
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-        </div>
-      ) : subCategory ? (
+      {subCategory ? (
         <div className="space-y-6">
           {/* Header Section */}
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -199,7 +176,7 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
                     Posts ({posts.length})
                   </h3>
                 </div>
-                {posts.length > 0 && (
+                {posts.length > 0 && subCategory?.id && (
                   <Link
                     href={`/posts?subCategory=${subCategory.id}`}
                     className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200 hover:underline"
@@ -237,9 +214,6 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
                             <h4 className="font-medium text-gray-900 mb-1">
                               {post.title}
                             </h4>
-                            <p className="text-sm text-gray-600 line-clamp-2">
-                              {post.excerpt || post.metaDescription}
-                            </p>
                           </div>
                           <div className="flex items-center space-x-2 ml-4">
                             <div className="flex items-center text-sm text-gray-500">
