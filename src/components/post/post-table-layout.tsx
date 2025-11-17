@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import ProTable, {
   type ProColumns,
   type ActionType,
@@ -20,7 +20,7 @@ import {
   CloseOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type PostDetail, postService } from "@/services/postService";
 import { categoryService } from "@/services/categoryService";
 import { POST_STATUS, type SubCategory } from "@/types";
@@ -33,7 +33,7 @@ import { getSafeImageUrl } from "@/utils/imageUtils";
 
 function PostTableLayout() {
   const actionRef = useRef<ActionType>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   // View Modal States
   const [viewPostId, setViewPostId] = useState<string>("");
@@ -47,33 +47,41 @@ function PostTableLayout() {
   const [editPost, setEditPost] = useState<PostDetail | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Load categories and subcategories
+  // Load categories and subcategories with optimized caching
   const { data: categoriesResponse } = useQuery({
     queryKey: ["categories"],
     queryFn: () => categoryService.getCategoryList(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
   });
 
-  const categories = categoriesResponse?.success
-    ? categoriesResponse.data || []
-    : [];
+  const categories = useMemo(
+    () => (categoriesResponse?.success ? categoriesResponse.data || [] : []),
+    [categoriesResponse]
+  );
 
-  // Load subcategories
+  // Load subcategories with optimized caching
   const { data: subCategoriesResponse } = useQuery({
     queryKey: ["subCategories"],
     queryFn: () => categoryService.getSubCategoryList(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
-  const subCategories = subCategoriesResponse?.success
-    ? subCategoriesResponse.data || []
-    : [];
+  const subCategories = useMemo(
+    () =>
+      subCategoriesResponse?.success ? subCategoriesResponse.data || [] : [],
+    [subCategoriesResponse]
+  );
 
-  // Build subcategory names map from queries
-  const subCategoryNames: Record<string, string> = {};
-  subCategories.forEach((query: SubCategory) => {
-    subCategoryNames[query.id] = query.key;
-  });
+  // Build subcategory names map from queries - memoized
+  const subCategoryNames = useMemo(() => {
+    const names: Record<string, string> = {};
+    subCategories.forEach((query: SubCategory) => {
+      names[query.id] = query.key;
+    });
+    return names;
+  }, [subCategories]);
 
   // Create Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -89,76 +97,97 @@ function PostTableLayout() {
     endDate: "",
   });
 
-  // const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+  // Loading state for posts
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
 
-  // Fetch posts with React Query
-  const fetchPosts = async (params: Record<string, unknown>) => {
-    setLoading(true);
-    try {
+  const fetchPosts = useCallback(
+    async (params: Record<string, unknown>) => {
       const { current = 1, pageSize: newPageSize = 10 } = params as {
         current?: number;
         pageSize?: number;
       };
 
-      const response = await postService.getPostList({
-        page: current,
-        pageSize: newPageSize,
-        search: filters.title || undefined,
-        category: filters.category || undefined,
-        subCategory: filters.subCategory || undefined,
-        creator: filters.creator || undefined,
-        status: filters.status || undefined,
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-      });
+      const currentPage = current as number;
+      const currentPageSize = newPageSize as number;
 
-      if (response.success && response.data?.data) {
-        setPostsData(response.data.data);
-        return {
-          data: response.data.data,
-          success: true,
-          total: response.data.pagination.totalItems,
-        };
-      } else {
-        toast.error(response.error || "Failed to fetch posts");
+      // Build query key for this specific request
+      const queryKey = [
+        "posts",
+        currentPage,
+        currentPageSize,
+        filters.title,
+        filters.category,
+        filters.subCategory,
+        filters.creator,
+        filters.status,
+        filters.startDate,
+        filters.endDate,
+      ];
+
+      setIsLoadingPosts(true);
+
+      try {
+        const response = await queryClient.ensureQueryData({
+          queryKey,
+          queryFn: async () => {
+            const result = await postService.getPostList({
+              page: currentPage,
+              pageSize: currentPageSize,
+              search: filters.title || undefined,
+              category: filters.category || undefined,
+              subCategory: filters.subCategory || undefined,
+              creator: filters.creator || undefined,
+              status: filters.status || undefined,
+              startDate: filters.startDate || undefined,
+              endDate: filters.endDate || undefined,
+            });
+
+            if (!result.success) {
+              throw new Error(result.error || "Failed to fetch posts");
+            }
+
+            return result;
+          },
+          staleTime: 2 * 60 * 1000, // 2 minutes
+          gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache for 10 minutes
+        });
+
+        if (response?.success && response.data?.data) {
+          setPostsData(response.data.data);
+          return {
+            data: response.data.data,
+            success: true,
+            total: response.data.pagination.totalItems,
+          };
+        }
+
         return {
           data: [],
           success: false,
           total: 0,
         };
+      } catch (error) {
+        console.error("Failed to fetch posts:", error);
+        toast.error("Failed to fetch posts");
+        return {
+          data: [],
+          success: false,
+          total: 0,
+        };
+      } finally {
+        setIsLoadingPosts(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch posts:", error);
-      toast.error("Failed to fetch posts");
-      return {
-        data: [],
-        success: false,
-        total: 0,
-      };
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [queryClient, filters]
+  );
 
-  // Handle edit post
-  const handleEdit = (post: PostDetail | string) => {
-    if (typeof post === "string") {
-      // If called with ID (from view modal), find the post
-      // For now, we'll need to fetch the post data
-      loadPostForEdit(post);
-    } else {
-      // If called with post object (from table)
-      setEditPost(post);
-      setIsEditModalOpen(true);
+  // Invalidate posts cache helper
+  const invalidatePostsCache = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["posts"] });
+  }, [queryClient]);
 
-      // Close view modal if open
-      if (isViewModalOpen) {
-        setIsViewModalOpen(false);
-      }
-    }
-  };
-
-  const loadPostForEdit = async (id: string) => {
+  // Load post for edit - memoized
+  const loadPostForEdit = useCallback(async (id: string) => {
     try {
       const response = await postService.getPostDetail(id);
       if (response.success && response.data) {
@@ -172,36 +201,58 @@ function PostTableLayout() {
       console.error("Failed to load post:", error);
       toast.error("Failed to load post");
     }
-  };
+  }, []);
+
+  // Handle edit post - memoized
+  const handleEdit = useCallback(
+    (post: PostDetail | string) => {
+      if (typeof post === "string") {
+        // If called with ID (from view modal), find the post
+        loadPostForEdit(post);
+      } else {
+        // If called with post object (from table)
+        setEditPost(post);
+        setIsEditModalOpen(true);
+        setIsViewModalOpen(false); // Close view modal if open
+      }
+    },
+    [loadPostForEdit]
+  );
 
   // Handle view post
-  const handleView = (postId: string) => {
+  const handleView = useCallback((postId: string) => {
     setViewPostId(postId);
     setIsViewModalOpen(true);
-  };
+  }, []);
 
-  const handleDeleteSuccess = () => {
-    // Reload current page to refresh the table
+  // Handle delete success - invalidate cache
+  const handleDeleteSuccess = useCallback(() => {
+    invalidatePostsCache();
     actionRef.current?.reload();
-  };
+  }, [invalidatePostsCache]);
 
   // Handle quick edit
-  const handleQuickEdit = (postId: string) => {
+  const handleQuickEdit = useCallback((postId: string) => {
     setQuickEditPostId(postId);
-  };
+  }, []);
 
-  const handleQuickEditSuccess = (updatedPost: PostDetail) => {
-    actionRef.current?.reload();
+  // Handle quick edit success - invalidate cache
+  const handleQuickEditSuccess = useCallback(
+    (updatedPost: PostDetail) => {
+      invalidatePostsCache();
+      actionRef.current?.reload();
+      setQuickEditPostId(null);
+    },
+    [invalidatePostsCache]
+  );
+
+  const handleQuickEditCancel = useCallback(() => {
     setQuickEditPostId(null);
-  };
+  }, []);
 
-  const handleQuickEditCancel = () => {
-    setQuickEditPostId(null);
-  };
-
-  // Handle post success (create/edit)
-  const handlePostSuccess = () => {
-    // Reload current page to refresh the table
+  // Handle post success (create/edit) - invalidate cache
+  const handlePostSuccess = useCallback(() => {
+    invalidatePostsCache();
     actionRef.current?.reload();
 
     // Close modals
@@ -210,10 +261,10 @@ function PostTableLayout() {
     setEditPost(null);
 
     toast.success("Post updated successfully");
-  };
+  }, [invalidatePostsCache]);
 
   // Handle filter changes
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters((prev) => {
       const newFilters = {
         ...prev,
@@ -227,10 +278,10 @@ function PostTableLayout() {
 
       return newFilters;
     });
-  };
+  }, []);
 
   // Clear all filters
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilters({
       title: "",
       category: "",
@@ -240,15 +291,18 @@ function PostTableLayout() {
       startDate: "",
       endDate: "",
     });
+    invalidatePostsCache();
+    // ProTable will automatically reset to first page when reload is called
     actionRef.current?.reload();
     toast.success("Search cleared");
-  };
+  }, [invalidatePostsCache]);
 
   // Apply filters
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
+    invalidatePostsCache();
+    // ProTable will automatically reset to first page when reload is called
     actionRef.current?.reload();
-    // toast.success("Search applied");
-  };
+  }, [invalidatePostsCache]);
 
   // Handle Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -849,7 +903,7 @@ function PostTableLayout() {
           actionRef={actionRef}
           request={fetchPosts}
           rowKey="id"
-          loading={loading}
+          loading={isLoadingPosts}
           className="post-table-layout"
           style={{ minHeight: "60vh" }}
           pagination={{
