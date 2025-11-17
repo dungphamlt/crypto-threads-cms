@@ -1,5 +1,5 @@
 import { del, get, patch, post } from "./api";
-import { Tag, ApiResponse } from "@/types";
+import { Tag } from "@/types";
 
 export interface TagListResponse {
   data: Tag[];
@@ -27,7 +27,9 @@ export const tagService = {
     if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
 
     const queryString = queryParams.toString();
-    const endpoint = `/content-management/tags${queryString ? `?${queryString}` : ""}`;
+    const endpoint = `/content-management/tags${
+      queryString ? `?${queryString}` : ""
+    }`;
     console.log("Fetching tags from:", endpoint);
     return get<TagListResponse>(endpoint);
   },
@@ -55,4 +57,3 @@ export const tagService = {
     return post<void>("/content-management/tags/bulk-delete", { tagIds });
   },
 };
-

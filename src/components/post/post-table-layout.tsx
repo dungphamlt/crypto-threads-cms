@@ -30,7 +30,7 @@ import PostFormModal from "@/components/post/post-create";
 import DeletePostButton from "@/components/post/DeletePostButton";
 import PostQuickEdit from "@/components/post/post-quick-edit";
 import { getSafeImageUrl } from "@/utils/imageUtils";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 function PostTableLayout() {
   const searchParams = useSearchParams();
@@ -44,7 +44,7 @@ function PostTableLayout() {
 
   // Quick Edit State
   const [quickEditPostId, setQuickEditPostId] = useState<string | null>(null);
-  const [postsData, setPostsData] = useState<PostDetail[]>([]);
+  // const [postsData, setPostsData] = useState<PostDetail[]>([]);
 
   // Edit Modal States
   const [editPost, setEditPost] = useState<PostDetail | null>(null);
@@ -156,7 +156,7 @@ function PostTableLayout() {
         });
 
         if (response?.success && response.data?.data) {
-          setPostsData(response.data.data);
+          // setPostsData(response.data.data);
           return {
             data: response.data.data,
             success: true,
@@ -245,6 +245,8 @@ function PostTableLayout() {
       invalidatePostsCache();
       actionRef.current?.reload();
       setQuickEditPostId(null);
+      toast.success("Post updated successfully");
+      console.log("Post updated successfully", updatedPost);
     },
     [invalidatePostsCache]
   );

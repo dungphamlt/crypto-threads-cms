@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Plus, Grid3X3, List } from "lucide-react";
 import {
   PostGridLayout,
@@ -10,6 +10,10 @@ import {
 } from "@/components/post";
 // import type { PostDetail } from "@/services/postService";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
+export const dynamic = "force-dynamic";
+
 type ViewMode = "grid" | "table";
 
 function PostsManagement() {
@@ -89,7 +93,19 @@ function PostsManagement() {
 
       {/* Content */}
       <div className="bg-transparent rounded-lg">
-        {viewMode === "table" ? <PostTableLayout /> : <PostGridLayout />}
+        {viewMode === "table" ? (
+          <Suspense
+            fallback={
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            }
+          >
+            <PostTableLayout />
+          </Suspense>
+        ) : (
+          <PostGridLayout />
+        )}
       </div>
 
       {/* Create Post Modal */}

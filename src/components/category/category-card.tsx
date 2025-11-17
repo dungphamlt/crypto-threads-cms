@@ -9,7 +9,6 @@ import {
   Folder,
   Eye,
   Plus,
-  FileText,
   FolderClosed,
   Loader2,
 } from "lucide-react";

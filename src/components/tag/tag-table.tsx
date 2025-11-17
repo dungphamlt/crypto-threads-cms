@@ -1,9 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import {
+  Search,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 import { Tag } from "@/types";
-import { tagService, TagListResponse } from "@/services/tagService";
+import { tagService } from "@/services/tagService";
 import toast from "react-hot-toast";
 import { ConfigProvider } from "antd";
 import enUS from "antd/locale/en_US";
@@ -37,12 +45,19 @@ const TagTable: React.FC<TagTableProps> = ({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [bulkAction, setBulkAction] = useState<string>("");
   const [quickEditTagId, setQuickEditTagId] = useState<string | null>(null);
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; tagId: string; tagName: string }>({
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    tagId: string;
+    tagName: string;
+  }>({
     isOpen: false,
     tagId: "",
     tagName: "",
   });
-  const [bulkDeleteModal, setBulkDeleteModal] = useState<{ isOpen: boolean; tagIds: string[] }>({
+  const [bulkDeleteModal, setBulkDeleteModal] = useState<{
+    isOpen: boolean;
+    tagIds: string[];
+  }>({
     isOpen: false,
     tagIds: [],
   });
@@ -58,7 +73,7 @@ const TagTable: React.FC<TagTableProps> = ({
         sortOrder,
       });
 
-      console.log("res", response.data)
+      console.log("res", response.data);
 
       if (response.success && response.data) {
         setTags(response.data.data || []);
@@ -84,7 +99,14 @@ const TagTable: React.FC<TagTableProps> = ({
     setSelectedTags(new Set());
     setQuickEditTagId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, pagination.limit, searchQuery, sortBy, sortOrder, refreshTrigger]);
+  }, [
+    pagination.page,
+    pagination.limit,
+    searchQuery,
+    sortBy,
+    sortOrder,
+    refreshTrigger,
+  ]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,9 +139,9 @@ const TagTable: React.FC<TagTableProps> = ({
     e.stopPropagation(); // Prevent event bubbling
     // Kiểm tra xem tất cả tags trong trang hiện tại có được chọn không
     const currentPageTagIds = tags.map((tag) => tag._id);
-    const allCurrentPageSelected = currentPageTagIds.length > 0 && currentPageTagIds.every((id) =>
-      selectedTags.has(id)
-    );
+    const allCurrentPageSelected =
+      currentPageTagIds.length > 0 &&
+      currentPageTagIds.every((id) => selectedTags.has(id));
 
     if (allCurrentPageSelected) {
       // Bỏ chọn tất cả tags trong trang hiện tại
@@ -161,7 +183,9 @@ const TagTable: React.FC<TagTableProps> = ({
     try {
       const response = await tagService.deleteTags(bulkDeleteModal.tagIds);
       if (response.success) {
-        toast.success(`${bulkDeleteModal.tagIds.length} tag(s) deleted successfully`);
+        toast.success(
+          `${bulkDeleteModal.tagIds.length} tag(s) deleted successfully`
+        );
         setSelectedTags(new Set());
         setBulkAction("");
         fetchTags();
@@ -280,7 +304,8 @@ const TagTable: React.FC<TagTableProps> = ({
         {/* Pagination Info */}
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-600">
-            {pagination.totalItems} item(s) • Page {pagination.page} of {pagination.totalPages}
+            {pagination.totalItems} item(s) • Page {pagination.page} of{" "}
+            {pagination.totalPages}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -293,7 +318,10 @@ const TagTable: React.FC<TagTableProps> = ({
             </button>
             <button
               onClick={() =>
-                setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))
+                setPagination((prev) => ({
+                  ...prev,
+                  page: Math.max(1, prev.page - 1),
+                }))
               }
               disabled={pagination.page === 1 || loading}
               className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -376,13 +404,19 @@ const TagTable: React.FC<TagTableProps> = ({
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
                     Loading...
                   </td>
                 </tr>
               ) : tags.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
                     No tags found
                   </td>
                 </tr>
@@ -396,9 +430,7 @@ const TagTable: React.FC<TagTableProps> = ({
                         onCancel={handleQuickEditCancel}
                       />
                     ) : (
-                      <tr
-                        className="hover:bg-gray-50 transition-colors"
-                      >
+                      <tr className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3">
                           <input
                             type="checkbox"
@@ -460,7 +492,9 @@ const TagTable: React.FC<TagTableProps> = ({
         <DeleteTagModal
           tagName={deleteModal.tagName}
           isOpen={deleteModal.isOpen}
-          onClose={() => setDeleteModal({ isOpen: false, tagId: "", tagName: "" })}
+          onClose={() =>
+            setDeleteModal({ isOpen: false, tagId: "", tagName: "" })
+          }
           onSuccess={handleDeleteSuccess}
         />
 
@@ -476,4 +510,3 @@ const TagTable: React.FC<TagTableProps> = ({
 };
 
 export default TagTable;
-
