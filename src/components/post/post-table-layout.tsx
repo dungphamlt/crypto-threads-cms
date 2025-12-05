@@ -706,6 +706,7 @@ function PostTableLayout() {
             <div className="space-y-1">
               <div className="relative">
                 <select
+                  name="SelectCategory"
                   value={filters.category || ""}
                   onChange={(e) => handleFilterChange("category", e.target.value)}
                   className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white text-sm"
@@ -737,6 +738,7 @@ function PostTableLayout() {
             <div className="space-y-1">
               <div className="relative">
                 <select
+                  name="SelectSubCategory"
                   value={filters.subCategory || ""}
                   onChange={(e) => handleFilterChange("subCategory", e.target.value)}
                   disabled={!filters.category}
@@ -774,6 +776,7 @@ function PostTableLayout() {
             <div className="space-y-1">
               <div className="relative">
                 <select
+                  name="SelectCreator"
                   value={filters.creator || ""}
                   onChange={(e) => handleFilterChange("creator", e.target.value)}
                   className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white text-sm"
