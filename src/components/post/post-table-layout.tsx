@@ -822,6 +822,7 @@ function PostTableLayout() {
                 </div>
                 <div className="relative">
                   <select
+                    name="SelectStatusPosts"
                     value={filters.status || ""}
                     onChange={(e) => handleFilterChange("status", e.target.value)}
                     className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white text-sm"
