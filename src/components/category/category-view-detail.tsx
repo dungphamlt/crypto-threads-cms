@@ -15,6 +15,7 @@ import { categoryService } from "@/services/categoryService";
 import { postService } from "@/services/postService";
 import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
+import { getSafeImageUrl } from "@/utils/imageUtils";
 
 interface CategoryViewDetailProps {
   categoryId: string;
@@ -131,12 +132,22 @@ const CategoryViewDetail: React.FC<CategoryViewDetailProps> = ({
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center text-white font-semibold text-3xl mx-auto mb-4"
-                  style={{ backgroundColor: "#6366f1" }}
-                >
-                  📁
-                </div>
+                {category.imageUrl ? (
+                  <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-4 shadow-lg">
+                    <img
+                      src={getSafeImageUrl(category.imageUrl, "small")}
+                      alt={category.key}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-white font-semibold text-3xl mx-auto mb-4"
+                    style={{ backgroundColor: "#6366f1" }}
+                  >
+                    📁
+                  </div>
+                )}
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   {category.key}
                 </h2>

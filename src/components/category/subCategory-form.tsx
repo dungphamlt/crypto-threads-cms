@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Modal, message } from "antd";
-import { Folder, Save } from "lucide-react";
+import { Folder, Save, Upload, X } from "lucide-react";
 import { categoryService } from "@/services/categoryService";
 import { SubCategory } from "@/types";
+import { postService } from "@/services/postService";
+import toast from "react-hot-toast";
 
 interface SubCategoryFormProps {
   isOpen: boolean;
@@ -26,6 +28,8 @@ const SubCategoryForm: React.FC<SubCategoryFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [subCategoryName, setSubCategoryName] = useState("");
   const [errors, setErrors] = useState<{ name?: string }>({});
+  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const isEdit = !!subCategoryId && !!initialData;
   const [parentCategoryName, setParentCategoryName] = useState("");
@@ -46,8 +50,10 @@ const SubCategoryForm: React.FC<SubCategoryFormProps> = ({
     if (isOpen) {
       if (isEdit && initialData) {
         setSubCategoryName(initialData.key);
+        setImageUrl(initialData.imageUrl);
       } else {
         setSubCategoryName("");
+        setImageUrl(undefined);
       }
       setErrors({});
     }
@@ -68,6 +74,56 @@ const SubCategoryForm: React.FC<SubCategoryFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleFileUpload = useCallback(async (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image size must be less than 10MB");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const toastId = toast.loading("Uploading image...");
+
+    try {
+      const response = await postService.uploadImage(file, "sub-categories");
+
+      if (response.success && response.data) {
+        const uploadedImageUrl = response.data.secureUrl || response.data.url;
+        setImageUrl(uploadedImageUrl);
+        toast.success("Image uploaded successfully", { id: toastId });
+      } else {
+        toast.error(response.error || "Failed to upload image", {
+          id: toastId,
+        });
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image", { id: toastId });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }, []);
+
+  const handleImageChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    },
+    [handleFileUpload]
+  );
+
+  const handleRemoveImage = () => {
+    setImageUrl(undefined);
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -79,13 +135,15 @@ const SubCategoryForm: React.FC<SubCategoryFormProps> = ({
         // Update existing sub-category
         response = await categoryService.updateSubCategory(
           subCategoryName,
-          initialData!.id
+          initialData!.id,
+          imageUrl
         );
       } else {
         // Create new sub-category
         response = await categoryService.createSubCategory(
           subCategoryName,
-          parentCategoryId
+          parentCategoryId,
+          imageUrl
         );
       }
 
@@ -97,6 +155,7 @@ const SubCategoryForm: React.FC<SubCategoryFormProps> = ({
             (response.data as SubCategory).categoryId || parentCategoryId,
           createdAt: response.data.createdAt,
           updatedAt: response.data.updatedAt,
+          imageUrl: response.data.imageUrl,
         };
         onSuccess(subCategoryData);
         onClose();
@@ -113,6 +172,7 @@ const SubCategoryForm: React.FC<SubCategoryFormProps> = ({
 
   const handleCancel = () => {
     setSubCategoryName("");
+    setImageUrl(undefined);
     setErrors({});
     onClose();
   };
@@ -168,6 +228,70 @@ const SubCategoryForm: React.FC<SubCategoryFormProps> = ({
           />
           {errors.name && (
             <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+          )}
+        </div>
+
+        {/* Image Upload */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Sub-Category Image
+          </label>
+          {imageUrl ? (
+            <div className="relative">
+              <div className="relative w-full h-48 rounded-lg border border-gray-300 overflow-hidden bg-gray-50">
+                <img
+                  src={imageUrl}
+                  alt="Sub-category preview"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  title="Remove image"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="file"
+                id="subcategory-image-upload"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+                disabled={isUploadingImage}
+              />
+              <label
+                htmlFor="subcategory-image-upload"
+                className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                  isUploadingImage
+                    ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                    : "border-gray-300 hover:border-purple-500 hover:bg-purple-50"
+                }`}
+              >
+                {isUploadingImage ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm text-gray-600">Uploading...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="p-3 bg-purple-100 rounded-full">
+                      <Upload className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      Click to upload image
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      PNG, JPG, GIF up to 10MB
+                    </span>
+                  </div>
+                )}
+              </label>
+            </div>
           )}
         </div>
 

@@ -16,6 +16,7 @@ import {
 import { postService } from "@/services/postService";
 import { SubCategory, PostDetail } from "@/types";
 import Link from "next/link";
+import { getSafeImageUrl } from "@/utils/imageUtils";
 
 interface SubCategoryViewDetailProps {
   subCategory: SubCategory;
@@ -119,12 +120,22 @@ const SubCategoryViewDetail: React.FC<SubCategoryViewDetailProps> = ({
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center text-white font-semibold text-3xl mx-auto mb-4"
-                  style={{ backgroundColor: "#8b5cf6" }}
-                >
-                  📁
-                </div>
+                {subCategory.imageUrl ? (
+                  <div className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-4 shadow-lg">
+                    <img
+                      src={getSafeImageUrl(subCategory.imageUrl, "small")}
+                      alt={subCategory.key}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="w-14 h-14 rounded-full flex items-center justify-center text-white font-semibold text-3xl mx-auto mb-4"
+                    style={{ backgroundColor: "#8b5cf6" }}
+                  >
+                    📁
+                  </div>
+                )}
                 <h2 className="text-2xl font-bold text-gray-900">
                   {subCategory.key}
                 </h2>

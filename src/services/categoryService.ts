@@ -23,25 +23,32 @@ export const categoryService = {
       `/content-management/sub-categories/id/${subCategoryId}`
     );
   },
-  createCategory: (key: string) => {
-    return post<Category>("/content-management/categories", { key });
+  createCategory: (key: string, imageUrl?: string) => {
+    return post<Category>("/content-management/categories", { key, imageUrl });
   },
-  createSubCategory: (key: string, categoryId: string) => {
+  createSubCategory: (key: string, categoryId: string, imageUrl?: string) => {
     return post<SubCategory>("/content-management/sub-categories", {
       key,
       categoryId,
+      imageUrl,
     });
   },
-  updateCategory: (key: string, categoryId: string) => {
+  updateCategory: (key: string, categoryId: string, imageUrl?: string) => {
     return patch<Category>(`/content-management/categories/${categoryId}`, {
       key,
+      imageUrl,
     });
   },
-  updateSubCategory: (key: string, subCategoryId: string) => {
+  updateSubCategory: (
+    key: string,
+    subCategoryId: string,
+    imageUrl?: string
+  ) => {
     return patch<SubCategory>(
       `/content-management/sub-categories/${subCategoryId}`,
       {
         key,
+        imageUrl,
       }
     );
   },

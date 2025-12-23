@@ -93,6 +93,7 @@ export interface Category {
   key: string;
   createdAt: string;
   updatedAt: string;
+  imageUrl?: string;
 }
 
 export interface SubCategory {
@@ -104,6 +105,7 @@ export interface SubCategory {
   };
   createdAt: string;
   updatedAt: string;
+  imageUrl?: string;
 }
 
 export interface Tag {

@@ -16,6 +16,7 @@ import { useState, useRef, useEffect } from "react";
 import type { Category, SubCategory } from "@/types";
 import { categoryService } from "@/services/categoryService";
 import { postService } from "@/services/postService";
+import { getSafeImageUrl } from "@/utils/imageUtils";
 
 export interface CategoryCardProps {
   category: Category;
@@ -117,9 +118,19 @@ export default function CategoryCard({
             onClick={() => onView(category.id)}
             className="flex items-center gap-4 card-content cursor-pointer"
           >
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center text-white font-semibold shadow-lg bg-primary">
-              <FolderClosed className="h-7 w-7" />
-            </div>
+            {category.imageUrl ? (
+              <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 shadow-lg">
+                <img
+                  src={getSafeImageUrl(category.imageUrl, "small")}
+                  alt={category.key}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center text-white font-semibold shadow-lg bg-primary">
+                <FolderClosed className="h-7 w-7" />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-semibold text-primary hover:text-blue-600 transition-colors truncate">
                 {category.key}
