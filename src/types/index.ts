@@ -44,6 +44,7 @@ export interface Post {
   status: POST_STATUS;
   slug?: string; // Thêm slug cho Post creation
   publishTime: string; // Thêm publishTime cho Post creation
+  isHotTopic?: boolean; // Hot top flag, default false
 }
 
 export interface PostDetail {
@@ -72,6 +73,7 @@ export interface PostDetail {
   createdAt: string;
   updatedAt: string;
   publishTime: string;
+  isHotTopic?: boolean; // Hot top flag, default false
 }
 
 export enum POST_STATUS {

@@ -68,6 +68,7 @@ export default function PostFormModal({
     slug: "",
     keyPhrases: [],
     publishTime: "",
+    isHotTopic: false,
   });
 
   const formValidation = useCallback(() => {
@@ -82,6 +83,8 @@ export default function PostFormModal({
   const { isValid: canSubmit } = formValidation();
 
   const populateForm = (postData: PostDetail) => {
+    // Handle both hotTop and isHotTopic from API
+    const hotTopValue = postData.isHotTopic ?? false;
     setPost({
       title: postData.title,
       content: postData.content,
@@ -95,6 +98,7 @@ export default function PostFormModal({
       slug: postData.slug,
       keyPhrases: postData.keyPhrases || [],
       publishTime: postData.publishTime,
+      isHotTopic: hotTopValue,
     });
   };
 
@@ -270,6 +274,7 @@ export default function PostFormModal({
         slug: "",
         keyPhrases: [],
         publishTime: "",
+        isHotTopic: false,
       });
     }
     setKeyPhraseInput("");
@@ -296,10 +301,9 @@ export default function PostFormModal({
 
     setIsSubmitting(true);
     const toastId = toast.loading(
-      `${
-        action === "saveDraft"
-          ? "Saving Draft"
-          : action === "schedule"
+      `${action === "saveDraft"
+        ? "Saving Draft"
+        : action === "schedule"
           ? "Scheduling"
           : "Publishing"
       } ${isEditMode ? "changes" : "post"}...`
@@ -312,8 +316,8 @@ export default function PostFormModal({
           action === "publish"
             ? POST_STATUS.PUBLISHED
             : action === "schedule"
-            ? POST_STATUS.SCHEDULE
-            : POST_STATUS.DRAFT,
+              ? POST_STATUS.SCHEDULE
+              : POST_STATUS.DRAFT,
         ...(action === "schedule" && {
           scheduledAt: new Date(
             `${scheduleDate}T${scheduleTime}`
@@ -323,9 +327,8 @@ export default function PostFormModal({
           action === "schedule"
             ? new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
             : new Date().toISOString(),
+        isHotTopic: post.isHotTopic || false, // Explicitly include hotTop
       };
-
-      console.log("Submitting data:", submitData);
 
       const response =
         isEditMode && postId
@@ -334,13 +337,12 @@ export default function PostFormModal({
 
       if (response.success && response.data?.id) {
         toast.success(
-          `Post ${
-            action === "saveDraft"
-              ? "draft saved"
-              : action === "schedule"
+          `Post ${action === "saveDraft"
+            ? "draft saved"
+            : action === "schedule"
               ? `scheduled for ${new Date(
-                  `${scheduleDate}T${scheduleTime}`
-                ).toLocaleString()}`
+                `${scheduleDate}T${scheduleTime}`
+              ).toLocaleString()}`
               : "published"
           } successfully`,
           { id: toastId }
@@ -358,10 +360,9 @@ export default function PostFormModal({
     } catch (error) {
       console.error("Submit error:", error);
       toast.error(
-        `An error occurred while ${
-          action === "saveDraft"
-            ? "saving draft"
-            : action === "schedule"
+        `An error occurred while ${action === "saveDraft"
+          ? "saving draft"
+          : action === "schedule"
             ? "scheduling"
             : "publishing"
         } the post`,
@@ -514,8 +515,8 @@ export default function PostFormModal({
                           {!post.category
                             ? "Select category first"
                             : subCategoriesLoading
-                            ? "Loading sub-categories..."
-                            : "Select a sub-category"}
+                              ? "Loading sub-categories..."
+                              : "Select a sub-category"}
                         </option>
                         {subCategories?.map((subcat: SubCategory) => (
                           <option key={subcat.id} value={subcat.id}>
@@ -548,11 +549,10 @@ export default function PostFormModal({
                       <div className="flex items-center gap-3">
                         <label
                           htmlFor="cover-upload"
-                          className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${
-                            isUploadingCover
-                              ? "border-primary/30 bg-primary/5 cursor-not-allowed"
-                              : "border-primary/30 hover:border-primary/50 hover:bg-primary/5"
-                          }`}
+                          className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${isUploadingCover
+                            ? "border-primary/30 bg-primary/5 cursor-not-allowed"
+                            : "border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                            }`}
                         >
                           {isUploadingCover ? (
                             <>
@@ -614,6 +614,25 @@ export default function PostFormModal({
                     </p>
                   </div>
 
+                  {/* Hot Top Option */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-primary">
+                      <input
+                        type="checkbox"
+                        name="hotTop"
+                        checked={post.isHotTopic || false}
+                        onChange={(e) =>
+                          setPost((prev) => ({ ...prev, isHotTopic: e.target.checked }))
+                        }
+                        className="text-primary focus:ring-primary/20"
+                      />
+                      Hot Topic
+                    </label>
+                    <p className="mt-1 text-xs text-primary/60">
+                      Mark as Hot Topic
+                    </p>
+                  </div>
+
                   {/* SEO Section */}
                   <SEOFormSection
                     post={post}
@@ -623,7 +642,7 @@ export default function PostFormModal({
                     handleKeyPhraseInputKeyDown={handleKeyPhraseInputKeyDown}
                     addKeyPhrase={addKeyPhrase}
                     removeKeyPhrase={removeKeyPhrase}
-                    sectionRef={() => {}}
+                    sectionRef={() => { }}
                   />
 
                   {/* Publishing Options */}
@@ -714,8 +733,8 @@ export default function PostFormModal({
                       {isSubmitting
                         ? "Publishing..."
                         : isEditMode
-                        ? "Update & Publish"
-                        : "Publish"}
+                          ? "Update & Publish"
+                          : "Publish"}
                     </button>
                   )}
                 </div>

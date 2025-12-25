@@ -711,11 +711,12 @@ function PostTableLayout() {
         {/* Increased padding for bigger frame */}
         <div className="px-8 py-8">
           {/* Filter Controls - fewer columns so each control is wider */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Category Select */}
             <div className="space-y-1">
               <div className="relative">
                 <select
+                  name="SelectCategory"
                   value={filters.category || ""}
                   onChange={(e) =>
                     handleFilterChange("category", e.target.value)
@@ -758,6 +759,7 @@ function PostTableLayout() {
             <div className="space-y-1">
               <div className="relative">
                 <select
+                  name="SelectSubCategory"
                   value={filters.subCategory || ""}
                   onChange={(e) =>
                     handleFilterChange("subCategory", e.target.value)
@@ -806,6 +808,7 @@ function PostTableLayout() {
             <div className="space-y-1">
               <div className="relative">
                 <select
+                  name="SelectCreator"
                   value={filters.creator || ""}
                   onChange={(e) =>
                     handleFilterChange("creator", e.target.value)
@@ -843,56 +846,45 @@ function PostTableLayout() {
                 )}
               </div>
             </div>
-            {/* Start Date */}
-            <div className="space-y-2">
-              <div className="relative">
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  placeholder="All date"
-                  onChange={(e) =>
-                    handleFilterChange("startDate", e.target.value)
-                  }
-                  className="w-full bg-white h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors"
-                />
-                {filters.startDate && (
-                  <button
-                    onClick={() => handleFilterChange("startDate", "")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+
+            {/* Status / Date group (we keep it in the same grid cell so layout remains neat) */}
+            <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={filters.startDate}
+                    placeholder="All date"
+                    onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors text-sm"
+                  />
+                  {filters.startDate && (
+                    <button
+                      onClick={() => handleFilterChange("startDate", "")}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <CloseOutlined style={{ fontSize: 12 }} />
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <select
+                    name="SelectStatusPosts"
+                    value={filters.status || ""}
+                    onChange={(e) => handleFilterChange("status", e.target.value)}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white text-sm"
                   >
-                    <CloseOutlined />
-                  </button>
-                )}
-              </div>
-            </div>
-            {/* Status Select */}
-            <div className="space-y-2">
-              <div className="relative">
-                <select
-                  value={filters.status || ""}
-                  onChange={(e) => handleFilterChange("status", e.target.value)}
-                  className="w-full h-10 px-4 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-blue-300 transition-colors appearance-none bg-white"
-                >
-                  <option value="">Select status</option>
-                  <option value={POST_STATUS.DRAFT}>Draft</option>
-                  <option value={POST_STATUS.PUBLISHED}>Published</option>
-                  <option value={POST_STATUS.TRASH}>Trash</option>
-                  <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
-                </select>
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-4 h-4 text-slate-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                    <option value="">Select status</option>
+                    <option value={POST_STATUS.DRAFT}>Draft</option>
+                    <option value={POST_STATUS.PUBLISHED}>Published</option>
+                    <option value={POST_STATUS.TRASH}>Trash</option>
+                    <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
