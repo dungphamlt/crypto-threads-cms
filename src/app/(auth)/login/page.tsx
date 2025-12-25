@@ -36,7 +36,7 @@ export default function LoginPage() {
 
     try {
       const response = await authService.login(formData);
-
+      console.log("Login response:", response);
       if (
         response.success &&
         response.data &&

@@ -159,7 +159,7 @@ export default function AuthorDetailModal({
               <h3 className="font-semibold text-gray-900 mb-4">Socials</h3>
               <div className="space-y-3">
                 {Object.entries(author.socials).map(([social, index]) => (
-                  <div key={index} className="flex items-center text-gray-600">
+                  <div key={social} className="flex items-center text-gray-600">
                     <Link2 className="h-4 w-4 mr-3 text-purple-500" />
                     <div>
                       <div className="text-sm text-gray-500">
