@@ -78,7 +78,7 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
         : post.subCategory || ""
     );
     // Handle both hotTop and isHotTopic from API
-    const hotTopValue = post.isHotTopic ?? (post as any).isHotTopic ?? false;
+    const hotTopValue = post.isHotTopic ?? false;
     setHotTop(hotTopValue);
   }, [post]);
 
