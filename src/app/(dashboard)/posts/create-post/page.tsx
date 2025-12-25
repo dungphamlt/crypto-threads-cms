@@ -51,6 +51,7 @@ export default function CreatePostPage() {
     slug: "",
     keyPhrases: [],
     publishTime: "",
+    isHotTopic: false,
   });
 
   const formValidation = useCallback(() => {
@@ -229,6 +230,7 @@ export default function CreatePostPage() {
       slug: "",
       keyPhrases: [],
       publishTime: "",
+      isHotTopic: false,
     });
     setTagInput("");
     setKeyPhraseInput("");
@@ -337,6 +339,7 @@ export default function CreatePostPage() {
           action === "schedule"
             ? new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
             : new Date().toISOString(),
+        isHotTopic: post.isHotTopic || false, // Explicitly include hotTop
       };
 
       const response = await postService.createPost(submitData);
@@ -601,6 +604,25 @@ export default function CreatePostPage() {
               </div>
               <p className="mt-2 text-xs text-primary/60">
                 Supported formats: JPG, PNG, GIF (Max 10MB)
+              </p>
+            </div>
+
+            {/* Hot Top Option */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-primary">
+                <input
+                  type="checkbox"
+                  name="hotTop"
+                  checked={post.isHotTopic || false}
+                  onChange={(e) =>
+                    setPost((prev) => ({ ...prev, isHotTopic: e.target.checked }))
+                  }
+                  className="text-primary focus:ring-primary/20"
+                />
+                Hot Topic
+              </label>
+              <p className="mt-1 text-xs text-primary/60">
+                Mark as Hot Topic
               </p>
             </div>
 

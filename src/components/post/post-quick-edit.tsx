@@ -38,6 +38,7 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
       ? post.subCategory.id
       : post.subCategory || ""
   );
+  const [hotTop, setHotTop] = useState<boolean>(post.isHotTopic || false);
 
   const { data: categoriesResponse } = useQuery({
     queryKey: ["categories"],
@@ -76,6 +77,9 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
         ? post.subCategory.id
         : post.subCategory || ""
     );
+    // Handle both hotTop and isHotTopic from API
+    const hotTopValue = post.isHotTopic ?? (post as any).isHotTopic ?? false;
+    setHotTop(hotTopValue);
   }, [post]);
 
   const handleTagsChange = (newTags: string[]) => {
@@ -99,6 +103,7 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
         tags,
         category: categoryId,
         subCategory: subCategoryId,
+        isHotTopic: hotTop,
       };
 
       const response = await postService.updatePost(post.id, updateData);
@@ -131,6 +136,9 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
         ? post.subCategory.id
         : post.subCategory || ""
     );
+    // Handle both hotTop and isHotTopic from API
+    const hotTopValue = post.isHotTopic ?? false;
+    setHotTop(hotTopValue);
     onCancel();
   };
 
@@ -246,6 +254,21 @@ const PostQuickEdit: React.FC<PostQuickEditProps> = ({
                 <option value={POST_STATUS.SCHEDULE}>Scheduled</option>
                 <option value={POST_STATUS.TRASH}>Trash</option>
               </select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap w-28">
+                Hot Top:
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={hotTop}
+                  onChange={(e) => setHotTop(e.target.checked)}
+                  className="text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-600">Đánh dấu hot top</span>
+              </label>
             </div>
           </div>
         </div>
