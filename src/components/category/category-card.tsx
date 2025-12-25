@@ -9,14 +9,14 @@ import {
   Folder,
   Eye,
   Plus,
-  FileText,
-  ChevronRight,
+  FolderClosed,
   Loader2,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import type { Category } from "@/types";
+import type { Category, SubCategory } from "@/types";
 import { categoryService } from "@/services/categoryService";
 import { postService } from "@/services/postService";
+import { getSafeImageUrl } from "@/utils/imageUtils";
 
 export interface CategoryCardProps {
   category: Category;
@@ -24,7 +24,7 @@ export interface CategoryCardProps {
   onEdit: (categoryId: string) => void;
   onDelete: (categoryId: string) => void;
   onAddSubCategory: (categoryId: string) => void;
-  onViewSubCategory: (subCategoryId: string) => void;
+  onViewSubCategory: (subCategory: SubCategory) => void;
 }
 
 export default function CategoryCard({
@@ -58,7 +58,7 @@ export default function CategoryCard({
         retry: 2,
       },
       {
-        queryKey: ["posts", "category", category.id],
+        queryKey: ["posts", category.id],
         queryFn: () => postService.getPostsByCategory(category.id),
         enabled: !!category.id,
         staleTime: 5 * 60 * 1000, // 5 minutes
@@ -110,25 +110,35 @@ export default function CategoryCard({
   }, [showPopup]);
 
   return (
-    <article className="group relative  rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+    <article className="group relative  rounded-xl border border-primary/50 bg-white transition-all duration-300 hover:-translate-y-1">
       {/* Header */}
-      <header className="p-6 pb-4">
-        <div className="flex items-start justify-between">
+      <header className="p-6 pb-4 ">
+        <div className="flex items-start justify-between pb-6 border-b border-secondary/50">
           <div
             onClick={() => onView(category.id)}
             className="flex items-center gap-4 card-content cursor-pointer"
           >
-            <div
-              className="h-14 w-14 rounded-2xl flex items-center justify-center text-white font-semibold shadow-lg"
-              style={{ backgroundColor: "#6366f1" }}
-            >
-              <Folder className="h-7 w-7" />
-            </div>
+            {category.imageUrl ? (
+              <div className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 shadow-lg">
+                <img
+                  src={getSafeImageUrl(category.imageUrl, "small")}
+                  alt={category.key}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="h-12 w-12 rounded-xl flex items-center justify-center text-white font-semibold shadow-lg bg-primary">
+                <FolderClosed className="h-7 w-7" />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate">
+              <h3 className="text-lg font-semibold text-primary hover:text-blue-600 transition-colors truncate">
                 {category.key}
               </h3>
             </div>
+            <span className="font-medium text-primary ml-2 pl-4 border-l border-primary">
+              {postCount} posts
+            </span>
           </div>
 
           <div className="relative">
@@ -207,39 +217,36 @@ export default function CategoryCard({
             no data found, please try again later
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Post Count */}
-            <div className="flex items-center gap-2 text-sm">
-              <FileText className="h-4 w-4 text-gray-400" />
-              <span className="text-gray-600">
-                <span className="font-medium text-gray-900">{postCount}</span>{" "}
-                posts
-              </span>
-            </div>
-
+          <div>
             {/* Sub Categories */}
             {subCategories.length > 0 && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Folder className="h-4 w-4" />
-                  <span>Sub categories ({subCategories.length})</span>
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="flex items-center gap-2 text-primary font-medium">
+                    <Folder className="h-6 w-6" />
+                    <span>Sub categories:</span>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleActionClick(() => onAddSubCategory(category.id));
+                    }}
+                    className="bg-primary text-white px-3 py-1.5 text-sm rounded-lg hover:bg-primary/90 transition-colors flex items-center"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add sub category
+                  </button>
                 </div>
-                <div className="space-y-1 max-h-20 overflow-y-auto">
-                  {subCategories.slice(0, 3).map((subCat) => (
+                <div className="flex flex-wrap  gap-4">
+                  {subCategories.map((subCat) => (
                     <div
                       key={subCat.id}
-                      onClick={() => onViewSubCategory(subCat.id)}
-                      className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-md px-2 py-1"
+                      onClick={() => onViewSubCategory(subCat)}
+                      className="flex items-center gap-2 text-sm text-primary font-medium bg-thirdary cursor-pointer hover:bg-primary hover:text-white transition-colors rounded-full px-5 py-2"
                     >
-                      <ChevronRight className="h-3 w-3 text-gray-400" />
                       <span className="truncate">{subCat.key}</span>
                     </div>
                   ))}
-                  {subCategories.length > 3 && (
-                    <div className="text-xs text-gray-500 px-2">
-                      +{subCategories.length - 3} sub categories
-                    </div>
-                  )}
                 </div>
               </div>
             )}

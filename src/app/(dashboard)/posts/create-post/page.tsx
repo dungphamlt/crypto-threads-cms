@@ -28,7 +28,7 @@ const DESC_LIMIT = 380;
 export default function CreatePostPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tagInput, setTagInput] = useState<string>("");
+  // const [tagInput, setTagInput] = useState<string>("");
   const [keyPhraseInput, setKeyPhraseInput] = useState<string>("");
   const [isScheduleMode, setIsScheduleMode] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
@@ -105,34 +105,34 @@ export default function CreatePostPage() {
     []
   );
 
-  const addTag = useCallback(() => {
-    const trimmedTag = tagInput.trim().toLowerCase();
-    if (
-      trimmedTag &&
-      !post.tags.includes(trimmedTag) &&
-      post.tags.length < 10
-    ) {
-      setPost((prev) => ({ ...prev, tags: [...prev.tags, trimmedTag] }));
-      setTagInput("");
-    }
-  }, [tagInput, post.tags]);
+  // const addTag = useCallback(() => {
+  //   const trimmedTag = tagInput.trim().toLowerCase();
+  //   if (
+  //     trimmedTag &&
+  //     !post.tags.includes(trimmedTag) &&
+  //     post.tags.length < 10
+  //   ) {
+  //     setPost((prev) => ({ ...prev, tags: [...prev.tags, trimmedTag] }));
+  //     setTagInput("");
+  //   }
+  // }, [tagInput, post.tags]);
 
-  const handleTagInputKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" || e.key === ",") {
-        e.preventDefault();
-        addTag();
-      }
-    },
-    [addTag]
-  );
+  // const handleTagInputKeyDown = useCallback(
+  //   (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //     if (e.key === "Enter" || e.key === ",") {
+  //       e.preventDefault();
+  //       addTag();
+  //     }
+  //   },
+  //   [addTag]
+  // );
 
-  const removeTag = useCallback((tagToRemove: string) => {
-    setPost((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((tag) => tag !== tagToRemove),
-    }));
-  }, []);
+  // const removeTag = useCallback((tagToRemove: string) => {
+  //   setPost((prev) => ({
+  //     ...prev,
+  //     tags: prev.tags.filter((tag) => tag !== tagToRemove),
+  //   }));
+  // }, []);
 
   const addKeyPhrase = useCallback(() => {
     const trimmedKeyPhrase = keyPhraseInput.trim().toLowerCase();
@@ -232,7 +232,7 @@ export default function CreatePostPage() {
       publishTime: "",
       isHotTopic: false,
     });
-    setTagInput("");
+    // setTagInput("");
     setKeyPhraseInput("");
     setIsScheduleMode(false);
     setScheduleDate("");
@@ -313,9 +313,10 @@ export default function CreatePostPage() {
 
     setIsSubmitting(true);
     const toastId = toast.loading(
-      `${action === "saveDraft"
-        ? "Saving Draft"
-        : action === "schedule"
+      `${
+        action === "saveDraft"
+          ? "Saving Draft"
+          : action === "schedule"
           ? "Scheduling"
           : "Publishing"
       } post...`
@@ -328,8 +329,8 @@ export default function CreatePostPage() {
           action === "publish"
             ? POST_STATUS.PUBLISHED
             : action === "schedule"
-              ? POST_STATUS.SCHEDULE
-              : POST_STATUS.DRAFT,
+            ? POST_STATUS.SCHEDULE
+            : POST_STATUS.DRAFT,
         ...(action === "schedule" && {
           scheduledAt: new Date(
             `${scheduleDate}T${scheduleTime}`
@@ -346,12 +347,13 @@ export default function CreatePostPage() {
 
       if (response.success && response.data?.id) {
         toast.success(
-          `Post ${action === "saveDraft"
-            ? "draft saved"
-            : action === "schedule"
+          `Post ${
+            action === "saveDraft"
+              ? "draft saved"
+              : action === "schedule"
               ? `scheduled for ${new Date(
-                `${scheduleDate}T${scheduleTime}`
-              ).toLocaleString()}`
+                  `${scheduleDate}T${scheduleTime}`
+                ).toLocaleString()}`
               : "published"
           } successfully`,
           { id: toastId }
@@ -366,9 +368,10 @@ export default function CreatePostPage() {
     } catch (error) {
       console.error("Submit error:", error);
       toast.error(
-        `An error occurred while ${action === "saveDraft"
-          ? "saving draft"
-          : action === "schedule"
+        `An error occurred while ${
+          action === "saveDraft"
+            ? "saving draft"
+            : action === "schedule"
             ? "scheduling"
             : "publishing"
         } the post`,
@@ -509,8 +512,8 @@ export default function CreatePostPage() {
                     {!post.category
                       ? "Select category first"
                       : subCategoriesLoading
-                        ? "Loading sub-categories..."
-                        : "Select a sub-category"}
+                      ? "Loading sub-categories..."
+                      : "Select a sub-category"}
                   </option>
                   {subCategories?.map((subcat: SubCategory) => (
                     <option key={subcat.id} value={subcat.id}>
@@ -542,10 +545,11 @@ export default function CreatePostPage() {
                 <div className="flex items-center gap-3">
                   <label
                     htmlFor="cover-upload"
-                    className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${isUploadingCover
-                      ? "border-primary/30 bg-primary/5 cursor-not-allowed"
-                      : "border-primary/30 hover:border-primary/50 hover:bg-primary/5"
-                      }`}
+                    className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors ${
+                      isUploadingCover
+                        ? "border-primary/30 bg-primary/5 cursor-not-allowed"
+                        : "border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                    }`}
                   >
                     {isUploadingCover ? (
                       <>
@@ -739,10 +743,11 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("title");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "title"
-                    ? "bg-primary text-white border border-primary"
-                    : "text-primary border border-primary/20 hover:bg-primary/5"
-                    }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
+                    activeSection === "title"
+                      ? "bg-primary text-white border border-primary"
+                      : "text-primary border border-primary/20 hover:bg-primary/5"
+                  }`}
                 >
                   Title
                 </button>
@@ -752,10 +757,11 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("content");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "content"
-                    ? "bg-primary text-white border border-primary"
-                    : "text-primary border border-primary/20 hover:bg-primary/5"
-                    }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
+                    activeSection === "content"
+                      ? "bg-primary text-white border border-primary"
+                      : "text-primary border border-primary/20 hover:bg-primary/5"
+                  }`}
                 >
                   Content
                 </button>
@@ -765,10 +771,11 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("short-description");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "short-description"
-                    ? "bg-primary text-white border border-primary"
-                    : "text-primary border border-primary/20 hover:bg-primary/5"
-                    }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
+                    activeSection === "short-description"
+                      ? "bg-primary text-white border border-primary"
+                      : "text-primary border border-primary/20 hover:bg-primary/5"
+                  }`}
                 >
                   Short Description
                 </button>
@@ -778,10 +785,11 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("category");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "category"
-                    ? "bg-primary text-white border border-primary"
-                    : "text-primary border border-primary/20 hover:bg-primary/5"
-                    }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
+                    activeSection === "category"
+                      ? "bg-primary text-white border border-primary"
+                      : "text-primary border border-primary/20 hover:bg-primary/5"
+                  }`}
                 >
                   Category
                 </button>
@@ -791,10 +799,11 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("seo");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "seo"
-                    ? "bg-primary text-white border border-primary"
-                    : "text-primary border border-primary/20 hover:bg-primary/5"
-                    }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
+                    activeSection === "seo"
+                      ? "bg-primary text-white border border-primary"
+                      : "text-primary border border-primary/20 hover:bg-primary/5"
+                  }`}
                 >
                   SEO
                 </button>
@@ -804,10 +813,11 @@ export default function CreatePostPage() {
                     e.preventDefault();
                     scrollToSection("publishing-options");
                   }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${activeSection === "publishing-options"
-                    ? "bg-primary text-white border border-primary"
-                    : "text-primary border border-primary/20 hover:bg-primary/5"
-                    }`}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-all ${
+                    activeSection === "publishing-options"
+                      ? "bg-primary text-white border border-primary"
+                      : "text-primary border border-primary/20 hover:bg-primary/5"
+                  }`}
                 >
                   Publishing Options
                 </button>
