@@ -711,7 +711,7 @@ function PostTableLayout() {
         {/* Increased padding for bigger frame */}
         <div className="px-8 py-8">
           {/* Filter Controls - fewer columns so each control is wider */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Category Select */}
             <div className="space-y-1">
               <div className="relative">
